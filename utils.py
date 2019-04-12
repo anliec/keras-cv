@@ -1,6 +1,7 @@
 import math
 import numpy as np
-from keras.layers import Conv2D, UpSampling2D
+from keras.layers import Conv2D
+import scipy.stats as st
 
 
 def create_edge_kernel(left_color, right_color, angle, kernel_size=7, dmz_size=0.0) -> np.ndarray:
@@ -10,7 +11,10 @@ def create_edge_kernel(left_color, right_color, angle, kernel_size=7, dmz_size=0
     assert kernel_size % 2 == 1
     assert len(right_color) == len(left_color)
     center = kernel_size // 2
-    kernel = np.zeros(shape=(kernel_size, kernel_size, len(right_color)), dtype=np.float32)
+    kernel = np.zeros(shape=(kernel_size,
+                             kernel_size,
+                             len(right_color)),
+                      dtype=np.float32)
     ratio = math.tan(angle)
     dmz = abs(ratio * dmz_size)
     for y, vy in enumerate(kernel):
@@ -32,13 +36,12 @@ def get_edge_kernel_weights(input_filters: int, kernel_size: int, filters_count:
                                                       [-1, -1, -1],
                                                       i * angle_increment,
                                                       kernel_size,
-                                                      0.3
-                                                      )
+                                                      0.3)
     layer_bias = np.zeros(shape=filters_count)
     return layer_kernel, layer_bias
 
 
-def get_edge_layer_and_weights(input_filters: int, kernel_size: int, filters_count: int, padding='valid',
+def get_edge_layer_and_weights(input_filters: int, kernel_size: int, filters_count: int, padding='same',
                                activation='relu'):
     layer = Conv2D(filters_count,
                    (kernel_size, kernel_size),
@@ -83,15 +86,27 @@ def bounded_line_detection_filter(filter_size, line_length, line_offset, line_an
                 point_list_y.append(v + center)
         return point_list_y, point_list_x
 
+    negative_points_y, negative_points_x = [], []
+    positive_points_y, positive_points_x = [], []
     for x in range(line_middle_x - x_lenght,
                    line_middle_x - x_lenght//2):
-        filter_matrix[f(x)] = -1.
+        lx, ly = f(x)
+        negative_points_x += lx
+        negative_points_y += ly
     for x in range(line_middle_x - x_lenght//2,
                    line_middle_x + 1 + x_lenght//2):
-        filter_matrix[f(x)] = 1.
+        lx, ly = f(x)
+        positive_points_x += lx
+        positive_points_y += ly
     for x in range(line_middle_x + 1 + x_lenght//2,
                    line_middle_x + 1 + x_lenght):
-        filter_matrix[f(x)] = -1.
+        lx, ly = f(x)
+        negative_points_x += lx
+        negative_points_y += ly
+    negative_weight = -1.0 / len(negative_points_y)
+    positive_weight = 1.0 / len(positive_points_y)
+    filter_matrix[(negative_points_y, negative_points_x)] = negative_weight
+    filter_matrix[(positive_points_y, positive_points_x)] = positive_weight
     return filter_matrix
 
 
@@ -114,7 +129,7 @@ def get_square_detection_weights(input_filter_count: int, filter_count: int, min
 
 def get_square_detection_layer_and_weights(input_filter_count: int, filter_count: int, min_square_size: int,
                                            max_square_size: int, kernel_size: int, first_input_filter_index: int = 1,
-                                           input_filter_index_increment: int = 2, padding='valid',
+                                           input_filter_index_increment: int = 2, padding='same',
                                            activation='relu'):
     layer = Conv2D(filter_count,
                    (kernel_size, kernel_size),
@@ -171,7 +186,7 @@ def get_line_detection_weights(filter_count: int, angle_increment: int, filter_s
 
 
 def get_line_detection_layer_and_weights(filter_count: int, angle_increment: int, filter_size: int = 5,
-                                         padding='valid', activation='relu'):
+                                         padding='same', activation='relu'):
     layer = Conv2D(filter_count,
                    (filter_size, filter_size),
                    padding=padding,
@@ -180,4 +195,77 @@ def get_line_detection_layer_and_weights(filter_count: int, angle_increment: int
                    activation=activation)
     kernel, bias = get_line_detection_weights(filter_count, angle_increment, filter_size)
     return layer, kernel, bias
+
+
+def get_detection_filter_layer_and_weights(filter_count: int, dmz_size: int = 1, other_penality: int = -1,
+                                           filter_size: int = 5, padding='same', activation='relu'):
+    layer = Conv2D(filter_count,
+                   (filter_size, filter_size),
+                   padding=padding,
+                   kernel_initializer='normal',
+                   use_bias=True,
+                   activation=activation)
+    kernel = np.zeros(shape=(filter_size,
+                             filter_size,
+                             filter_count,
+                             filter_count))
+    bias = np.zeros(shape=filter_count)
+    gaussian = gaussian_kernel(filter_size)
+    for f_in in range(filter_count):
+        for f_out in range(filter_count):
+            if f_in == f_out:
+                w = gaussian
+            elif f_in + dmz_size < f_out or f_in - dmz_size > f_out:
+                w = other_penality * gaussian
+            else:
+                w = np.zeros(shape=(filter_size, filter_size), dtype=np.float32)
+            kernel[:, :, f_in, f_out] = w
+    return layer, kernel, bias
+
+
+def get_score_layer_and_weights(input_filter: int, filter_size: int = 5, padding='same', activation='relu'):
+    layer = Conv2D(1,
+                   (filter_size, filter_size),
+                   padding=padding,
+                   kernel_initializer='normal',
+                   use_bias=True,
+                   activation=activation)
+    kernel = np.zeros(shape=(filter_size,
+                             filter_size,
+                             1,
+                             input_filter))
+    bias = np.zeros(shape=1)
+    gaussian = gaussian_kernel(filter_size)
+    for f in range(input_filter):
+        kernel[:, :, 0, f] = gaussian
+    return layer, kernel, bias
+
+
+def get_size_layer_and_weights(input_filter: int, filter_size: int = 5, padding='same', activation='relu'):
+    layer = Conv2D(1,
+                   (filter_size, filter_size),
+                   padding=padding,
+                   kernel_initializer='normal',
+                   use_bias=True,
+                   activation=activation)
+    kernel = np.zeros(shape=(filter_size,
+                             filter_size,
+                             1,
+                             input_filter))
+    bias = np.zeros(shape=1)
+    gaussian = gaussian_kernel(filter_size)
+    for f in range(input_filter):
+        kernel[:, :, 0, f] = gaussian * 5 * math.pow(2, input_filter - f - 1)
+    return layer, kernel, bias
+
+
+def gaussian_kernel(kernal_size):
+    """Returns a 2D Gaussian kernel."""
+
+    lim = kernal_size // 2 + (kernal_size % 2) / 2
+    x = np.linspace(-lim, lim, kernal_size + 1)
+    kern1d = np.diff(st.norm.cdf(x))
+    kern2d = np.outer(kern1d, kern1d)
+    return kern2d/kern2d.sum()
+
 
