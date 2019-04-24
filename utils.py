@@ -1,7 +1,9 @@
 import math
 import numpy as np
-from keras.layers import Conv2D
+from keras.layers import Conv2D, Layer
 import scipy.stats as st
+from keras import backend as K
+from functools import lru_cache
 
 
 def create_edge_kernel(left_color, right_color, angle, kernel_size=7, dmz_size=0.0) -> np.ndarray:
@@ -25,7 +27,7 @@ def create_edge_kernel(left_color, right_color, angle, kernel_size=7, dmz_size=0
                 v[:] = right_color[:]
             elif ratio * cur_x - dmz > cur_y + dmz_size:
                 v[:] = left_color[:]
-    return kernel
+    return kernel / np.abs(kernel.sum())
 
 
 def get_edge_kernel_weights(input_filters: int, kernel_size: int, filters_count: int):
@@ -48,7 +50,8 @@ def get_edge_layer_and_weights(input_filters: int, kernel_size: int, filters_cou
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
-                   activation=activation)
+                   activation=activation,
+                   name="EdgeDetector")
     kernel, bias = get_edge_kernel_weights(input_filters, kernel_size, filters_count)
     return layer, kernel, bias
 
@@ -136,7 +139,8 @@ def get_square_detection_layer_and_weights(input_filter_count: int, filter_count
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
-                   activation=activation)
+                   activation=activation,
+                   name="SquareDetector")
     kernel, bias = get_square_detection_weights(input_filter_count, filter_count, min_square_size, max_square_size,
                                                 kernel_size, first_input_filter_index, input_filter_index_increment)
     return layer, kernel, bias
@@ -192,7 +196,8 @@ def get_line_detection_layer_and_weights(filter_count: int, angle_increment: int
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
-                   activation=activation)
+                   activation=activation,
+                   name="LineDetector")
     kernel, bias = get_line_detection_weights(filter_count, angle_increment, filter_size)
     return layer, kernel, bias
 
@@ -204,7 +209,8 @@ def get_detection_filter_layer_and_weights(filter_count: int, dmz_size: int = 1,
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
-                   activation=activation)
+                   activation=activation,
+                   name="DetectionFiltering")
     kernel = np.zeros(shape=(filter_size,
                              filter_size,
                              filter_count,
@@ -229,37 +235,41 @@ def get_score_layer_and_weights(input_filter: int, filter_size: int = 5, padding
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
-                   activation=activation)
+                   activation=activation,
+                   name="Score")
     kernel = np.zeros(shape=(filter_size,
                              filter_size,
-                             1,
-                             input_filter))
+                             input_filter,
+                             1))
     bias = np.zeros(shape=1)
     gaussian = gaussian_kernel(filter_size)
     for f in range(input_filter):
-        kernel[:, :, 0, f] = gaussian
+        kernel[:, :, f, 0] = gaussian
     return layer, kernel, bias
 
 
-def get_size_layer_and_weights(input_filter: int, filter_size: int = 5, padding='same', activation='relu'):
+def get_size_layer_and_weights(input_filter: int, filter_size: int = 5, first_filter_size=5, filter_size_factor=2,
+                               padding='same', activation='relu'):
     layer = Conv2D(1,
                    (filter_size, filter_size),
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
-                   activation=activation)
+                   activation=activation,
+                   name="Size")
     kernel = np.zeros(shape=(filter_size,
                              filter_size,
-                             1,
-                             input_filter))
+                             input_filter,
+                             1))
     bias = np.zeros(shape=1)
     gaussian = gaussian_kernel(filter_size)
     for f in range(input_filter):
-        kernel[:, :, 0, f] = gaussian * 5 * math.pow(2, input_filter - f - 1)
+        kernel[:, :, f, 0] = gaussian * first_filter_size * math.pow(filter_size_factor, input_filter - f - 1)
     return layer, kernel, bias
 
 
-def gaussian_kernel(kernal_size):
+@lru_cache(maxsize=20)
+def gaussian_kernel(kernal_size: int) -> np.ndarray:
     """Returns a 2D Gaussian kernel."""
 
     lim = kernal_size // 2 + (kernal_size % 2) / 2
@@ -267,5 +277,63 @@ def gaussian_kernel(kernal_size):
     kern1d = np.diff(st.norm.cdf(x))
     kern2d = np.outer(kern1d, kern1d)
     return kern2d/kern2d.sum()
+
+
+def normalisation(x, axis=-1):
+    """normalisation activation function.
+
+    # Arguments
+        x: Input tensor.
+        axis: Integer, axis along which the normalization is applied.
+
+    # Returns
+        Tensor, output of normalisation transformation.
+
+    # Raises
+        ValueError: In case `dim(x) == 1`.
+    """
+    ndim = K.ndim(x)
+    if ndim == 1:
+        raise ValueError('Cannot apply normalisation to a tensor that is 1D')
+    elif ndim > 1:
+        p = K.softplus(x)
+        s = K.sum(p, axis=axis, keepdims=True)
+        return p / s
+    else:
+        raise ValueError('Cannot apply normalisation to a tensor that is 1D. '
+                         'Received input: %s' % x)
+
+
+class Normalisation(Layer):
+    """Normalisation activation function.
+
+    # Input shape
+        Arbitrary. Use the keyword argument `input_shape`
+        (tuple of integers, does not include the samples axis)
+        when using this layer as the first layer in a model.
+
+    # Output shape
+        Same shape as the input.
+
+    # Arguments
+        axis: Integer, axis along which the Normalization is applied.
+    """
+
+    def __init__(self, axis=-1, **kwargs):
+        super(Normalisation, self).__init__(**kwargs)
+        self.supports_masking = True
+        self.axis = axis
+
+    def call(self, inputs):
+        return normalisation(inputs, axis=self.axis)
+
+    def get_config(self):
+        config = {'axis': self.axis}
+        base_config = super(Normalisation, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
 
 
