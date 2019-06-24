@@ -69,8 +69,6 @@ if __name__ == '__main__':
                         dest="epoch")
     parser.add_argument('-r', '--random-weights',
                         required=False,
-                        type=int,
-                        default=4,
                         help='Initialise weights with random values',
                         dest="random_init",
                         action='store_true')
