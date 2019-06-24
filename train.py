@@ -10,7 +10,7 @@ from detection_processing import process_detection, draw_roi, Roi
 
 def train(data_path: str, batch_size: int = 4, epoch: int = 1):
 
-    model = load_network(input_shape=[902, 1158])
+    model = load_network(size_value=[902, 1158])
     input_shape = model.layers[0].input_shape[1:3]
     annotation_shape = model.layers[-1].output_shape[1:3]
     annotation_shape = int(annotation_shape[0]), int(annotation_shape[1])

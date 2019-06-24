@@ -23,14 +23,14 @@ pyramid_depth = 7
 scale_initial_value = 1.0
 
 
-def load_network(input_shape):
-    assert len(input_shape) == 2
+def load_network(size_value):
+    assert len(size_value) == 2
     k = math.pow(2, pyramid_depth)
-    for i, v in enumerate(input_shape):
+    for i, v in enumerate(size_value):
         v -= (v - edge_kernel_size + 1) % k
-        input_shape[i] = int(v)
-    print("Reshaped input size: {}".format(input_shape))
-    height, width = input_shape
+        size_value[i] = int(v)
+    print("Reshaped input size: {}".format(size_value))
+    height, width = size_value
 
     # create layers
     input_layer = Input(shape=(height, width, 3))
@@ -95,15 +95,15 @@ def load_network(input_shape):
 
     score = score_layer(filtered)
 
-    size_score = Softmax(axis=3, name="SoftmaxNorm")(filtered)
-    # size_score = Normalisation(axis=-1, name="Normalisation")(filtered)
-    # size_score = BatchNormalization(axis=-1)(filtered)
-    input_shape = size_layer(size_score)
+    # size_score = Softmax(axis=3, name="SoftmaxNorm")(filtered)
+    size_score = Normalisation(axis=3, name="Normalisation")(filtered)
+    # size_score = BatchNormalization(axis=3)(filtered)
+    size_value = size_layer(size_score)
 
     # scale_factor = tf.Variable(scale_initial_value, name='scale_factor', dtype=np.float32)
     # input_shape = Lambda(lambda x: x * scale_factor, name="Size")(input_shape)
 
-    model = Model(inputs=input_layer, outputs=[score, input_shape])
+    model = Model(inputs=input_layer, outputs=[score, size_value])
     # model.compile("SGD", loss='mse')
 
     # set weights

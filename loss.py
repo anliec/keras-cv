@@ -33,7 +33,7 @@ def detection_loss(gaussian_diameter: int = 31, score_tp_weight: float = 0.9, sc
         # print(y_true, y_pred, size_pred_masked)
         size_se = K.square(K.square(y_true) - K.square(size_pred_masked))
         # return K.sum(size_mask)
-        return K.sum(size_se) / (K.sum(size_mask) + 0.001)
+        return K.sum(size_se) / (K.sum(size_mask) + 0.0001)
         # return K.max(size_se)
         # return K.sum(size_mask)
     
