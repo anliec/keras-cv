@@ -23,7 +23,7 @@ pyramid_depth = 7
 scale_initial_value = 1.0
 
 
-def load_network(size_value):
+def load_network(size_value, random_init: bool = False):
     assert len(size_value) == 2
     k = math.pow(2, pyramid_depth)
     for i, v in enumerate(size_value):
@@ -96,9 +96,9 @@ def load_network(size_value):
     score = score_layer(filtered)
 
     # size_score = Softmax(axis=3, name="SoftmaxNorm")(filtered)
-    size_score = Normalisation(axis=3, name="Normalisation")(filtered)
+    # size_score = Normalisation(axis=3, name="Normalisation")(filtered)
     # size_score = BatchNormalization(axis=3)(filtered)
-    size_value = size_layer(size_score)
+    size_value = size_layer(filtered)
 
     # scale_factor = tf.Variable(scale_initial_value, name='scale_factor', dtype=np.float32)
     # input_shape = Lambda(lambda x: x * scale_factor, name="Size")(input_shape)
@@ -107,12 +107,13 @@ def load_network(size_value):
     # model.compile("SGD", loss='mse')
 
     # set weights
-    model.get_layer("EdgeDetector").set_weights((edge_weights, edge_bias))
-    model.get_layer("LineDetector").set_weights((line_weights, line_bias))
-    model.get_layer("SquareDetector").set_weights((square_weights, square_bias))
-    model.get_layer("DetectionFiltering").set_weights((filter_weights, filter_bias))
-    model.get_layer("Score").set_weights((score_weights, score_bias))
-    model.get_layer("Size").set_weights((size_weights, score_bias))
+    if not random_init:
+        model.get_layer("EdgeDetector").set_weights((edge_weights, edge_bias))
+        model.get_layer("LineDetector").set_weights((line_weights, line_bias))
+        model.get_layer("SquareDetector").set_weights((square_weights, square_bias))
+        model.get_layer("DetectionFiltering").set_weights((filter_weights, filter_bias))
+        model.get_layer("Score").set_weights((score_weights, score_bias))
+        model.get_layer("Size").set_weights((size_weights, score_bias))
 
-    model.summary()
+    # model.summary()
     return model

@@ -8,9 +8,9 @@ from loss import detection_loss
 from detection_processing import process_detection, draw_roi, Roi
 
 
-def train(data_path: str, batch_size: int = 4, epoch: int = 1):
+def train(data_path: str, batch_size: int = 4, epoch: int = 1, random_init: bool = False):
 
-    model = load_network(size_value=[902, 1158])
+    model = load_network(size_value=[902, 1158], random_init=random_init)
     input_shape = model.layers[0].input_shape[1:3]
     annotation_shape = model.layers[-1].output_shape[1:3]
     annotation_shape = int(annotation_shape[0]), int(annotation_shape[1])
@@ -67,7 +67,14 @@ if __name__ == '__main__':
                         default=4,
                         help='Number of epoch during training',
                         dest="epoch")
+    parser.add_argument('-r', '--random-weights',
+                        required=False,
+                        type=int,
+                        default=4,
+                        help='Initialise weights with random values',
+                        dest="random_init",
+                        action='store_true')
     args = parser.parse_args()
 
-    train(args.data_path, args.batch, args.epoch)
+    train(args.data_path, args.batch, args.epoch, args.random_init)
 
