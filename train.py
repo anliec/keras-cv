@@ -8,7 +8,7 @@ from loss import detection_loss
 from detection_processing import process_detection, draw_roi, Roi
 
 
-def train(data_path: str):
+def train(data_path: str, batch_size: int = 4, epoch: int = 1):
 
     model = load_network(input_shape=[902, 1158])
     input_shape = model.layers[0].input_shape[1:3]
@@ -24,12 +24,12 @@ def train(data_path: str):
 
     model.compile(optimizer='sgd',
                   loss=detection_loss(score_min_bound=0.1, gaussian_diameter=11),
-                  # loss_weights={'Score': 1.0, 'Size': 0.0000001})
-                  loss_weights={'Score': 1.0, 'Size': 0.0})
-
-    model.fit_generator(YoloDataLoader(images_list_train, 4, input_shape, annotation_shape),
-                        validation_data=YoloDataLoader(images_list_test, 4, input_shape, annotation_shape),
-                        epochs=1, shuffle=True)
+                  loss_weights={'Score': 1.0, 'Size': 0.0000001}
+                  # loss_weights={'Score': 1.0, 'Size': 0.0}
+                  )
+    model.fit_generator(YoloDataLoader(images_list_train, batch_size, input_shape, annotation_shape),
+                        validation_data=YoloDataLoader(images_list_test, batch_size, input_shape, annotation_shape),
+                        epochs=epoch, shuffle=True)
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)
@@ -55,7 +55,19 @@ if __name__ == '__main__':
     parser.add_argument('data_path',
                         type=str,
                         help='Path to the input training data')
+    parser.add_argument('-b', '--batch-size',
+                        required=False,
+                        type=int,
+                        default=4,
+                        help='Size a of batch of data send to the neural network at one time',
+                        dest="batch")
+    parser.add_argument('-e', '--number-of-epoch',
+                        required=False,
+                        type=int,
+                        default=4,
+                        help='Number of epoch during training',
+                        dest="epoch")
     args = parser.parse_args()
 
-    train(args.data_path)
+    train(args.data_path, args.batch, args.epoch)
 
