@@ -1,24 +1,32 @@
 import numpy as np
+import cv2
 
 
 class Roi(object):
     def __init__(self, confidence: float, center_pos, size):
-        w = size
-        h = size
-        self.X = int(round(center_pos[0] - w / 2))
-        self.Y = int(round(center_pos[1] - h / 2))
+        self.W = size
+        self.H = size
+        self.X = center_pos[0] - self.W / 2
+        self.Y = center_pos[1] - self.H / 2
         if self.X < 0:
-            w += self.X
+            self.W += self.X
             self.X = 0
         if self.Y < 0:
-            h += self.Y
+            self.H += self.Y
             self.Y = 0
-        self.W = int(round(w))
-        self.H = int(round(h))
         self.confidence = confidence
 
     def get_overlap(self, other):
         return get_overlap(self, other)
+
+    def up_left_corner(self):
+        return int(round(self.Y)), int(round(self.X))
+
+    def down_right_corner(self):
+        return int(round(self.Y + self.H)), int(round(self.X + self.W))
+
+    def print(self):
+        print("X; {} Y: {} W: {}".format(self.X, self.Y, self.W))
 
 
 def get_overlap(roi_gt, roi_detection):
@@ -48,19 +56,40 @@ def get_overlap(roi_gt, roi_detection):
     return overlap
 
 
+def rescale_roi(roi: Roi, new_shape):
+    fx = new_shape[0] / roi.shape[0]
+    fy = new_shape[1] / roi.shape[1]
+    roi.X *= fx
+    roi.W *= fx
+    roi.Y *= fy
+    roi.H *= fy
+    roi.shape = new_shape
+    return roi
+
+
 def process_detection(score: np.ndarray, size: np.ndarray, threshold: float = 0.5):
     results = []
     while True:
-        pos = np.argmax(score)
+        pos = np.unravel_index(np.argmax(score), score.shape)
         confidence = score[pos]
+        # print("confidence: {}".format(confidence))
         if confidence < threshold:
+            # print("break")
             break
         else:
-            b = Roi(confidence, pos, size[pos])
+            b = Roi(confidence, pos[1:3], size[pos])
+            b.shape = score.shape[1:3]
             results.append(b)
             # mask out selected box
-            score[b.X:b.X + b.W, b.Y:b.Y + b.H] = 0.0
+            score[0, int(b.X):int(b.X + b.W), int(b.Y):int(b.Y + b.H), 0] = 0.0
     return results
+
+
+def draw_roi(img, roi_list, color=(0, 255, 0), width=4):
+    for roi in roi_list:
+        rescale_roi(roi, img.shape[0:2])
+        img = cv2.rectangle(img, roi.up_left_corner(), roi.down_right_corner(), color, width)
+    return img
 
 
 

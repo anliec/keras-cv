@@ -14,10 +14,10 @@ def load_yolo_gt(file_path: str, out_shape, class_to_load=("0",)):
             vals = line.split(" ")
             if vals[0] in class_to_load:
                 x, y, w, h = [float(v) for v in vals[1:]]
-                x, w = [int(round(v * out_shape[0])) for v in [x, w]]
-                y, h = [int(round(v * out_shape[1])) for v in [y, h]]
-                scores[x, y] = 1.0
-                sizes[x, y] = np.mean([h, w])
+                x, w = [int(round(v * out_shape[1])) for v in [x, w]]
+                y, h = [int(round(v * out_shape[0])) for v in [y, h]]
+                scores[y, x] = 1.0
+                sizes[y, x] = (h + w) / 2.0
     return scores, sizes
 
 

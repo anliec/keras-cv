@@ -74,7 +74,7 @@ def bounded_line_detection_filter(filter_size, line_length, line_offset, line_an
     a = math.tan(line_angle)
     b = line_offset * math.cos(line_angle) - a * line_middle_x
 
-    def f(x:int):
+    def f(x: int):
         point_list_x = []
         point_list_y = []
         if -center <= x <= center:
@@ -151,7 +151,7 @@ def small_filter_line_detector(filter_size: int, line_angle: float):
     center = filter_size // 2
     a = math.tan(line_angle)
 
-    def f(x:int):
+    def f(x: int):
         point_list_x = []
         point_list_y = []
         if -center <= x <= center:
@@ -174,7 +174,7 @@ def small_filter_line_detector(filter_size: int, line_angle: float):
     return filter_matrix / filter_matrix.sum()
 
 
-def get_line_detection_weights(filter_count: int, angle_increment: int, filter_size: int = 5):
+def get_line_detection_weights(filter_count: int, angle_increment: float, filter_size: int = 5):
     kernel = np.zeros(shape=(filter_size,
                              filter_size,
                              filter_count,
@@ -189,7 +189,7 @@ def get_line_detection_weights(filter_count: int, angle_increment: int, filter_s
     return kernel, bias
 
 
-def get_line_detection_layer_and_weights(filter_count: int, angle_increment: int, filter_size: int = 5,
+def get_line_detection_layer_and_weights(filter_count: int, angle_increment: float, filter_size: int = 5,
                                          padding='same', activation='relu'):
     layer = Conv2D(filter_count,
                    (filter_size, filter_size),
@@ -202,7 +202,7 @@ def get_line_detection_layer_and_weights(filter_count: int, angle_increment: int
     return layer, kernel, bias
 
 
-def get_detection_filter_layer_and_weights(filter_count: int, dmz_size: int = 1, other_penality: int = -1,
+def get_detection_filter_layer_and_weights(filter_count: int, dmz_size: int = 1, other_penalty: float = -1,
                                            filter_size: int = 5, padding='same', activation='relu'):
     layer = Conv2D(filter_count,
                    (filter_size, filter_size),
@@ -222,8 +222,8 @@ def get_detection_filter_layer_and_weights(filter_count: int, dmz_size: int = 1,
             if f_in == f_out:
                 w = gaussian
             elif f_in + dmz_size < f_out or f_in - dmz_size > f_out:
-                w = other_penality * gaussian
-            else:
+                w = other_penalty * gaussian
+            else:  # DMZ case
                 w = np.zeros(shape=(filter_size, filter_size), dtype=np.float32)
             kernel[:, :, f_in, f_out] = w
     return layer, kernel, bias
@@ -269,11 +269,11 @@ def get_size_layer_and_weights(input_filter: int, filter_size: int = 5, first_fi
 
 
 @lru_cache(maxsize=20)
-def gaussian_kernel(kernal_size: int) -> np.ndarray:
+def gaussian_kernel(kernel_size: int) -> np.ndarray:
     """Returns a 2D Gaussian kernel."""
 
-    lim = kernal_size // 2 + (kernal_size % 2) / 2
-    x = np.linspace(-lim, lim, kernal_size + 1)
+    lim = kernel_size // 2 + (kernel_size % 2) / 2
+    x = np.linspace(-lim, lim, kernel_size + 1)
     kern1d = np.diff(st.norm.cdf(x))
     kern2d = np.outer(kern1d, kern1d)
     return kern2d/kern2d.sum()
