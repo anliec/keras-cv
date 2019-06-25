@@ -108,12 +108,14 @@ def load_network(size_value, random_init: bool = False):
 
     # set weights
     if not random_init:
+        print("Loading preset weights")
         model.get_layer("EdgeDetector").set_weights((edge_weights, edge_bias))
         model.get_layer("LineDetector").set_weights((line_weights, line_bias))
         model.get_layer("SquareDetector").set_weights((square_weights, square_bias))
         model.get_layer("DetectionFiltering").set_weights((filter_weights, filter_bias))
         model.get_layer("Score").set_weights((score_weights, score_bias))
         model.get_layer("Size").set_weights((size_weights, score_bias))
-
+    else:
+        print("Keeping random weights")
     # model.summary()
     return model
