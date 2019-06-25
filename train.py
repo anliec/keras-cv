@@ -23,8 +23,8 @@ def train(data_path: str, batch_size: int = 4, epoch: int = 1, random_init: bool
     images_list_test = images_list[split:]
 
     model.compile(optimizer='sgd',
-                  loss=detection_loss(score_min_bound=0.1, gaussian_diameter=11),
-                  loss_weights={'Score': 1.0, 'Size': 0.0000001}
+                  loss=detection_loss(score_min_bound=0.1, gaussian_diameter=5),
+                  loss_weights={'Score': 1.0, 'Size': 0.000001}
                   # loss_weights={'Score': 1.0, 'Size': 0.0}
                   )
     model.fit_generator(YoloDataLoader(images_list_train, batch_size, input_shape, annotation_shape),
