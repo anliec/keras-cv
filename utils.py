@@ -279,6 +279,19 @@ def gaussian_kernel(kernel_size: int) -> np.ndarray:
     return kern2d/kern2d.sum()
 
 
+@lru_cache(maxsize=20)
+def gaussian_kernel_3d(kernel_size: int, kernel_height: int) -> np.ndarray:
+    """Returns a 2D Gaussian kernel."""
+    kern2d = gaussian_kernel(kernel_size)
+    lim = kernel_height // 2 + (kernel_height % 2) / 2
+    x = np.linspace(-lim, lim, kernel_height + 1)
+    kern1d = np.diff(st.norm.cdf(x))
+    kern3d = np.zeros(shape=(kernel_size, kernel_size, kernel_height))
+    for i, line in enumerate(kern2d):
+        kern3d[i, :, :] = np.outer(line, kern1d)
+    return kern3d/kern3d.sum()
+
+
 def normalisation(x, axis=-1):
     """normalisation activation function.
 
