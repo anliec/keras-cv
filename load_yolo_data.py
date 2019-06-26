@@ -88,8 +88,10 @@ def take_closest_index(my_list: list, my_number: float) -> int:
     If two numbers are equally close, return the smallest number.
     """
     pos = bisect_left(my_list, my_number)
-    if pos == 0 or pos == len(my_list):
+    if pos == 0:
         return pos
+    elif pos == len(my_list):
+        return pos - 1
     before = my_list[pos - 1]
     after = my_list[pos]
     if after - my_number < my_number - before:
