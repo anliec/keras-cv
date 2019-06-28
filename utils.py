@@ -30,21 +30,21 @@ def create_edge_kernel(left_color, right_color, angle, kernel_size=7, dmz_size=0
     return kernel / np.abs(kernel.sum())
 
 
-def get_edge_kernel_weights(input_filters: int, kernel_size: int, filters_count: int):
+def get_edge_kernel_weights(input_filters: int, kernel_size: int, filters_count: int, start_angle: float = 0.0):
     angle_increment = math.pi * 2 / filters_count
     layer_kernel = np.zeros(shape=(kernel_size, kernel_size, input_filters, filters_count))
     for i in range(filters_count):
         layer_kernel[:, :, :, i] = create_edge_kernel([1, 1, -2],
                                                       [-1, -1, -1],
-                                                      i * angle_increment,
+                                                      i * angle_increment + start_angle,
                                                       kernel_size,
                                                       0.3)
     layer_bias = np.zeros(shape=filters_count)
     return layer_kernel, layer_bias
 
 
-def get_edge_layer_and_weights(input_filters: int, kernel_size: int, filters_count: int, padding='same',
-                               activation='relu'):
+def get_edge_layer_and_weights(input_filters: int, kernel_size: int, filters_count: int, start_angle: float = 0.0,
+                               padding='same', activation='relu'):
     layer = Conv2D(filters_count,
                    (kernel_size, kernel_size),
                    padding=padding,
@@ -52,7 +52,7 @@ def get_edge_layer_and_weights(input_filters: int, kernel_size: int, filters_cou
                    use_bias=True,
                    activation=activation,
                    name="EdgeDetector")
-    kernel, bias = get_edge_kernel_weights(input_filters, kernel_size, filters_count)
+    kernel, bias = get_edge_kernel_weights(input_filters, kernel_size, filters_count, start_angle)
     return layer, kernel, bias
 
 
@@ -115,14 +115,14 @@ def bounded_line_detection_filter(filter_size, line_length, line_offset, line_an
 
 def get_square_detection_weights(input_filter_count: int, filter_count: int, min_square_size: int,
                                  max_square_size: int, kernel_size: int, first_input_filter_index: int = 1,
-                                 input_filter_index_increment: int = 2):
+                                 input_filter_index_increment: int = 2, start_angle: float = 0.0):
     kernel = np.zeros(shape=(kernel_size, kernel_size, input_filter_count, filter_count))
     bias = np.zeros(shape=filter_count)
 
     for f in range(filter_count):
         square_size = f * (max_square_size - min_square_size) + min_square_size
         for i in range(first_input_filter_index, input_filter_count, input_filter_index_increment):
-            angle = i * math.pi * 2 / input_filter_count
+            angle = i * math.pi * 2 / input_filter_count + start_angle
             kernel[:, :, i, f] = bounded_line_detection_filter(kernel_size,
                                                                square_size,
                                                                square_size // 2,
@@ -132,8 +132,8 @@ def get_square_detection_weights(input_filter_count: int, filter_count: int, min
 
 def get_square_detection_layer_and_weights(input_filter_count: int, filter_count: int, min_square_size: int,
                                            max_square_size: int, kernel_size: int, first_input_filter_index: int = 1,
-                                           input_filter_index_increment: int = 2, padding='same',
-                                           activation='relu'):
+                                           input_filter_index_increment: int = 2, start_angle: float = 0.0,
+                                           padding='same', activation='relu'):
     layer = Conv2D(filter_count,
                    (kernel_size, kernel_size),
                    padding=padding,
@@ -142,7 +142,8 @@ def get_square_detection_layer_and_weights(input_filter_count: int, filter_count
                    activation=activation,
                    name="SquareDetector")
     kernel, bias = get_square_detection_weights(input_filter_count, filter_count, min_square_size, max_square_size,
-                                                kernel_size, first_input_filter_index, input_filter_index_increment)
+                                                kernel_size, first_input_filter_index, input_filter_index_increment,
+                                                start_angle)
     return layer, kernel, bias
 
 
@@ -174,7 +175,8 @@ def small_filter_line_detector(filter_size: int, line_angle: float):
     return filter_matrix / filter_matrix.sum()
 
 
-def get_line_detection_weights(filter_count: int, angle_increment: float, filter_size: int = 5):
+def get_line_detection_weights(filter_count: int, angle_increment: float, filter_size: int = 5,
+                               start_angle: float = 0.0):
     kernel = np.zeros(shape=(filter_size,
                              filter_size,
                              filter_count,
@@ -182,7 +184,7 @@ def get_line_detection_weights(filter_count: int, angle_increment: float, filter
     bias = np.zeros(shape=filter_count)
 
     for f in range(filter_count):
-        angle = f * angle_increment
+        angle = f * angle_increment + start_angle
         kernel[:, :, f, f] = small_filter_line_detector(filter_size,
                                                         angle)
 
@@ -190,7 +192,7 @@ def get_line_detection_weights(filter_count: int, angle_increment: float, filter
 
 
 def get_line_detection_layer_and_weights(filter_count: int, angle_increment: float, filter_size: int = 5,
-                                         padding='same', activation='relu'):
+                                         start_angle: float = 0.0, padding='same', activation='relu'):
     layer = Conv2D(filter_count,
                    (filter_size, filter_size),
                    padding=padding,
@@ -198,7 +200,41 @@ def get_line_detection_layer_and_weights(filter_count: int, angle_increment: flo
                    use_bias=True,
                    activation=activation,
                    name="LineDetector")
-    kernel, bias = get_line_detection_weights(filter_count, angle_increment, filter_size)
+    kernel, bias = get_line_detection_weights(filter_count, angle_increment, filter_size, start_angle)
+    return layer, kernel, bias
+
+
+def get_bounded_line_detection_weights(filter_count: int, angle_increment: float, line_lengths: list,
+                                       filter_size: int = 5, start_angle: float = 0.0):
+    kernel = np.zeros(shape=(filter_size,
+                             filter_size,
+                             filter_count,
+                             filter_count * len(line_lengths)))
+    bias = np.zeros(shape=filter_count)
+
+    for i, l in enumerate(line_lengths):
+        out_offset = i * filter_count
+        for f in range(filter_count):
+            angle = f * angle_increment + start_angle
+            kernel[:, :, f, f + out_offset] = bounded_line_detection_filter(filter_size=filter_size,
+                                                                            line_length=l,
+                                                                            line_angle=angle,
+                                                                            line_offset=0)
+    return kernel, bias
+
+
+def get_bounded_line_detection_layer_and_weights(filter_count: int, angle_increment: float, line_lengths: list,
+                                                 filter_size: int = 5, start_angle: float = 0.0, padding='same',
+                                                 activation='relu'):
+    layer = Conv2D(filter_count,
+                   (filter_size, filter_size * len(line_lengths)),
+                   padding=padding,
+                   kernel_initializer='normal',
+                   use_bias=True,
+                   activation=activation,
+                   name="LineDetector")
+    kernel, bias = get_bounded_line_detection_weights(filter_count, angle_increment, line_lengths, filter_size,
+                                                      start_angle)
     return layer, kernel, bias
 
 

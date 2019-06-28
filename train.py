@@ -6,12 +6,14 @@ from load_yolo_data import list_data_from_dir, YoloDataLoader, RawYoloDataLoader
 from load_network import load_network
 from loss import detection_loss, raw_output_loss
 from detection_processing import process_detection, draw_roi, Roi, process_detection_raw
+from metrics import map_metric
 
 
-def train(data_path: str, batch_size: int = 4, epoch: int = 1, random_init: bool = False):
+def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
 
-    model, sizes = load_network(size_value=[902, 1158], random_init=random_init, pyramid_depth=5,
-                                first_pyramid_output=1)
+    model, sizes = load_network(size_value=[902, 1158], random_init=random_init, pyramid_depth=6,
+                                first_pyramid_output=2)
+    return
     input_shape = model.layers[0].input_shape[1:3]
     annotation_shape = model.layers[-1].output_shape[1:3]
     annotation_shape = int(annotation_shape[0]), int(annotation_shape[1])
@@ -33,6 +35,7 @@ def train(data_path: str, batch_size: int = 4, epoch: int = 1, random_init: bool
     #                     epochs=epoch, shuffle=True)
     model.compile(optimizer='sgd',
                   loss=raw_output_loss(score_min_bound=0.1, gaussian_diameter=11, gaussian_height=3),
+                  # metrics=[map_metric()]
                   )
 
     train_sequence = RawYoloDataLoader(images_list_train, batch_size, input_shape, annotation_shape,
@@ -65,7 +68,7 @@ def train(data_path: str, batch_size: int = 4, epoch: int = 1, random_init: bool
         pred_norm_max = (pred_norm_max[0, :, :, 0] * 255).astype(np.uint8)
         pred_norm_max = cv2.resize(pred_norm_max, (x_im.shape[1], x_im.shape[0]))
         cv2.imwrite(os.path.join(out_dir, "{:03d}_pred_max.png".format(i)), pred_norm_max)
-        pred_roi = process_detection_raw(raw_pred, sizes, 0.95 * raw_pred.max())
+        pred_roi = process_detection_raw(raw_pred, sizes, max(0.001, 0.95 * raw_pred.max()))
         bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi)
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
@@ -82,7 +85,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch-size',
                         required=False,
                         type=int,
-                        default=4,
+                        default=2,
                         help='Size a of batch of data send to the neural network at one time',
                         dest="batch")
     parser.add_argument('-e', '--number-of-epoch',

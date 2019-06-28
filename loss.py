@@ -20,7 +20,7 @@ def detection_loss(gaussian_diameter: int = 31, score_tp_weight: float = 0.9, sc
         score_lower_error = K.clip(y_true - y_pred, 0.0, 1.0)
 
         score_upper_mse = K.mean(K.square(score_upper_error))
-        score_lower_mse = K.sum(K.square(score_lower_error)) / (K.sum(y_true) + 1)
+        score_lower_mse = K.sum(K.square(score_lower_error)) / (K.sum(y_true) + K.epsilon())
         score_mse = score_tp_weight * score_lower_mse + score_fp_weight * score_upper_mse
 
         return score_mse
@@ -33,7 +33,7 @@ def detection_loss(gaussian_diameter: int = 31, score_tp_weight: float = 0.9, sc
         # print(y_true, y_pred, size_pred_masked)
         size_se = K.square(K.square(y_true) - K.square(size_pred_masked))
         # return K.sum(size_mask)
-        return K.sum(size_se) / (K.sum(size_mask) + 0.0001)
+        return K.sum(size_se) / (K.sum(size_mask) + K.epsilon())
         # return K.max(size_se)
         # return K.sum(size_mask)
     
@@ -57,7 +57,7 @@ def raw_output_loss(score_tp_weight: float = 1.0, score_fp_weight: float = 0.5, 
         score_lower_error = K.clip(y_true - y_pred, 0.0, 1.0)
 
         score_upper_mse = K.mean(K.square(score_upper_error))
-        score_lower_mse = K.sum(K.square(score_lower_error)) / (K.sum(y_true) + 1)
+        score_lower_mse = K.sum(K.square(score_lower_error)) / (K.sum(y_true) + K.epsilon())
         score_mse = score_tp_weight * score_lower_mse + score_fp_weight * score_upper_mse
 
         return score_mse

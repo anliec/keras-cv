@@ -93,20 +93,32 @@ def draw_roi(img, roi_list, color=(0, 255, 0), width=4):
 
 
 def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
-    results = []
     assert raw.shape[3] == len(sizes)
-    while True:
-        pos = np.unravel_index(np.argmax(raw), raw.shape)
-        confidence = raw[pos]
-        if confidence < threshold:
-            break
-        else:
-            b = Roi(confidence, pos[1:3], sizes[pos[3]])
-            b.shape = raw.shape[1:3]
-            results.append(b)
-            # mask out selected box
-            raw[0, int(b.X):int(b.X + b.W), int(b.Y):int(b.Y + b.H), :, 0] = 0.0
-    return results
+
+    per_image_results = []
+    for det in raw:
+        results = []
+        print("next frame")
+        while True:
+            pos = np.unravel_index(np.argmax(det), det.shape)
+            confidence = det[pos]
+            print(confidence, pos, threshold)
+            if confidence < threshold:
+                break
+            else:
+                b = Roi(confidence, pos[0:2], sizes[pos[2]])
+                b.shape = det.shape[0:2]
+                results.append(b)
+                # mask out selected box
+                det[int(b.X):int(b.X + b.W), int(b.Y):int(b.Y + b.H), :, 0] = 0.0
+        per_image_results.append(results)
+
+    if len(per_image_results) == 1:
+        return per_image_results[0]
+    else:
+        return per_image_results
+
+
 
 
 

@@ -6,19 +6,20 @@ from keras.models import Model
 from keras.activations import softmax
 from utils import *
 
-angle_count = 8
+angle_count = 4
+start_angle = math.pi / 4.0
 edge_kernel_size = 7
 line_detection_filter_size = 5
 square_detection_square_size_count = 2
-square_detection_min_square_size = 4
-square_detection_max_square_size = 6
-square_detection_kernel_size = 13
-detection_filter_filter_size = 5
-detection_filter_dmz_size = 1
-detection_filter_penalty = -0.1
-score_filter_size = 5
-size_filter_size = 5
-scale_initial_value = 1.0
+square_detection_min_square_size = 3
+square_detection_max_square_size = 4
+square_detection_kernel_size = 11
+# detection_filter_filter_size = 5
+# detection_filter_dmz_size = 1
+# detection_filter_penalty = -0.1
+# score_filter_size = 5
+# size_filter_size = 5
+# scale_initial_value = 1.0
 
 
 def load_network(size_value, random_init: bool = False, first_pyramid_output: int = 2, pyramid_depth: int = 7):
@@ -47,19 +48,22 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         input_filters=3,
         kernel_size=edge_kernel_size,
         filters_count=angle_count,
+        start_angle=start_angle,
         padding='valid'
     )
     line_layer, line_weights, line_bias = get_line_detection_layer_and_weights(
         filter_count=angle_count,
         angle_increment=math.pi * 2 / angle_count,
-        filter_size=line_detection_filter_size
+        filter_size=line_detection_filter_size,
+        start_angle=start_angle
     )
     square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
         input_filter_count=angle_count,
         filter_count=square_detection_square_size_count,
         min_square_size=square_detection_min_square_size,
         max_square_size=square_detection_max_square_size,
-        kernel_size=square_detection_kernel_size
+        kernel_size=square_detection_kernel_size,
+        start_angle=start_angle
     )
     max_pool_layer = MaxPool2D(pool_size=(2, 2), padding='same')
     # filter_layer, filter_weights, filter_bias = get_detection_filter_layer_and_weights(
