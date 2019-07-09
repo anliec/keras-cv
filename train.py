@@ -10,10 +10,8 @@ from metrics import map_metric
 
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
-
-    model, sizes = load_network(size_value=[902, 1158], random_init=random_init, pyramid_depth=6,
-                                first_pyramid_output=2)
-    return
+    model, sizes = load_network(size_value=[451, 579], random_init=random_init, pyramid_depth=6,
+                                first_pyramid_output=1)
     input_shape = model.layers[0].input_shape[1:3]
     annotation_shape = model.layers[-1].output_shape[1:3]
     annotation_shape = int(annotation_shape[0]), int(annotation_shape[1])
