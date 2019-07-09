@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import os
-
+from time import time
 from load_yolo_data import list_data_from_dir, YoloDataLoader, RawYoloDataLoader
 from load_network import load_network
 from loss import detection_loss, raw_output_loss
@@ -10,7 +10,7 @@ from metrics import map_metric
 
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
-    model, sizes = load_network(size_value=[451, 579], random_init=random_init, pyramid_depth=6,
+    model, sizes = load_network(size_value=[451, 579], random_init=random_init, pyramid_depth=5,
                                 first_pyramid_output=1)
     input_shape = model.layers[0].input_shape[1:3]
     annotation_shape = model.layers[-1].output_shape[1:3]
@@ -45,8 +45,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)
+    durations = []
     for i, (x_im, raw) in enumerate(test_sequence.data_list_iterator()):
-        raw_pred = model.predict(x_im.reshape((1,) + x_im.shape))
+        x = x_im.reshape((1,) + x_im.shape)
+        start = time()
+        raw_pred = model.predict(x)
+        end = time()
+        durations.append(end - start)
         pred_norm = raw_pred - raw_pred.min()
         pred_norm = pred_norm / pred_norm.max()
         pred_norm_max = np.max(pred_norm, axis=3)
@@ -58,6 +63,14 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         bb_im = draw_roi(bb_im, pred_roi)
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
+
+    print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
+    print("Fastest: {}s".format(min(durations)))
+    print("Slowest: {}s".format(max(durations)))
+
+    print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
+
+    model.save("model.h5")
 
 
 if __name__ == '__main__':

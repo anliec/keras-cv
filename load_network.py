@@ -8,7 +8,7 @@ from utils import *
 
 angle_count = 4
 start_angle = math.pi / 4.0
-edge_kernel_size = 7
+edge_kernel_size = 5
 line_detection_filter_size = 5
 square_detection_square_size_count = 2
 square_detection_min_square_size = 3
@@ -55,7 +55,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         filter_count=angle_count,
         angle_increment=math.pi * 2 / angle_count,
         filter_size=line_detection_filter_size,
-        start_angle=start_angle
+        start_angle=start_angle,
+        padding='same'
     )
     square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
         input_filter_count=angle_count,
@@ -63,7 +64,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         min_square_size=square_detection_min_square_size,
         max_square_size=square_detection_max_square_size,
         kernel_size=square_detection_kernel_size,
-        start_angle=start_angle
+        start_angle=start_angle,
+        padding='same'
     )
     max_pool_layer = MaxPool2D(pool_size=(2, 2), padding='same')
     # filter_layer, filter_weights, filter_bias = get_detection_filter_layer_and_weights(

@@ -37,24 +37,30 @@ class YoloDataLoader(Sequence):
         return tuple_data
 
     def load_yolo_gt(self, file_path: str, class_to_load=("0",)):
-        scores = np.zeros(self.annotation_shape)
-        sizes = np.zeros(self.annotation_shape)
+        bb_coordinates = []
         with open(file_path, 'r') as gt:
             for line in gt:
                 vals = line.split(" ")
                 if vals[0] in class_to_load:
                     x, y, w, h = [float(v) for v in vals[1:]]
-                    x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
-                    y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
-                    scores[y, x] = 1.0
-                    sizes[y, x] = (h + w) / 2.0
+                    bb_coordinates.append((x, y, w, h))
+        return self.get_annotation_from_yolo_gt_values(bb_coordinates)
+
+    def get_annotation_from_yolo_gt_values(self, bounding_box_coordinates_list):
+        scores = np.zeros(self.annotation_shape, dtype=np.float16)
+        sizes = np.zeros(self.annotation_shape, dtype=np.float16)
+        for x, y, w, h in bounding_box_coordinates_list:
+            x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
+            y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
+            scores[y, x] = 1.0
+            sizes[y, x] = (h + w) / 2.0
         return scores, sizes
 
     def load_yolo_image(self, image_path: str):
         im = cv2.imread(image_path)
         im = cv2.resize(im, self.image_shape[::-1])
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        im = im.astype(np.float)
+        im = im.astype(np.float16)
         im /= im.max()
         return im
 
@@ -121,17 +127,13 @@ class RawYoloDataLoader(YoloDataLoader):
         data = [self.load_yolo_pair(i) for i in image_path_list]
         return np.array([d[0] for d in data], dtype=np.float16), np.array([d[1] for d in data], dtype=np.float16)
 
-    def load_yolo_gt(self, file_path: str, class_to_load=("0",)):
-        raw = np.zeros(self.annotation_shape + (len(self.pyramid_size_list), 1))
-        with open(file_path, 'r') as gt:
-            for line in gt:
-                vals = line.split(" ")
-                if vals[0] in class_to_load:
-                    x, y, w, h = [float(v) for v in vals[1:]]
-                    x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
-                    y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
-                    index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
-                    raw[y, x, index, 0] = 1.0
+    def get_annotation_from_yolo_gt_values(self, bounding_box_coordinates_list):
+        raw = np.zeros(self.annotation_shape + (len(self.pyramid_size_list), 1), dtype=np.float16)
+        for x, y, w, h in bounding_box_coordinates_list:
+            x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
+            y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
+            index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
+            raw[y, x, index, 0] = 1.0
         return raw
 
 
