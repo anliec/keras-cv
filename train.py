@@ -45,19 +45,6 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)
-    # for i, (x_im, score, size) in enumerate(test_sequence.data_list_iterator()):
-    #     score_pred, size_pred = model.predict(x_im.reshape((1,) + x_im.shape))
-    #     pred_norm = score_pred - score_pred.min()
-    #     pred_norm = pred_norm / pred_norm.max()
-    #     pred_norm = (pred_norm[0, :, :, 0] * 255).astype(np.uint8)
-    #     pred_norm = cv2.resize(pred_norm, (x_im.shape[1], x_im.shape[0]))
-    #     cv2.imwrite(os.path.join(out_dir, "{:03d}_pred.png".format(i)), pred_norm)
-    #     pred_roi = process_detection(score_pred, size_pred, 0.95 * score_pred.max())
-    #     bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
-    #     bb_im = draw_roi(bb_im, pred_roi)
-    #     bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
-    #     cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
-    #     del score_pred, size_pred, pred_norm
     for i, (x_im, raw) in enumerate(test_sequence.data_list_iterator()):
         raw_pred = model.predict(x_im.reshape((1,) + x_im.shape))
         pred_norm = raw_pred - raw_pred.min()

@@ -7,6 +7,7 @@ import itertools
 from keras.utils import Sequence
 import random
 from bisect import bisect_left
+from math import ceil
 
 
 class YoloDataLoader(Sequence):
@@ -17,16 +18,23 @@ class YoloDataLoader(Sequence):
         self.annotation_shape = annotation_shape
         if shuffle:
             random.shuffle(self.image_list)
+        self.loaded_array = [None] * (int(ceil(len(self.image_list) / self.batch_size)))
 
     def __len__(self):
         return int(np.ceil(len(self.image_list) / float(self.batch_size)))
 
     def __getitem__(self, idx: int):
-        images = self.image_list[idx * self.batch_size:(idx + 1) * self.batch_size]
-        data = [self.load_yolo_pair(i) for i in images]
-        return np.array([d[0] for d in data]), \
-               [np.array([d[1][0].reshape(d[1][0].shape + (1,)) for d in data]),
-                np.array([d[1][1].reshape(d[1][1].shape + (1,)) for d in data])]
+        if self.loaded_array[idx] is None:
+            images = self.image_list[idx * self.batch_size:(idx + 1) * self.batch_size]
+            self.loaded_array[idx] = self.load_data_list(images)
+        return self.loaded_array[idx]
+
+    def load_data_list(self, image_path_list):
+        data = [self.load_yolo_pair(i) for i in image_path_list]
+        tuple_data = np.array([d[0] for d in data], dtype=np.float16), \
+                     [np.array([d[1][0].reshape(d[1][0].shape + (1,)) for d in data], dtype=np.float16),
+                      np.array([d[1][1].reshape(d[1][1].shape + (1,)) for d in data], dtype=np.float16)]
+        return tuple_data
 
     def load_yolo_gt(self, file_path: str, class_to_load=("0",)):
         scores = np.zeros(self.annotation_shape)
@@ -101,15 +109,17 @@ def take_closest_index(my_list: list, my_number: float) -> int:
 
 
 class RawYoloDataLoader(YoloDataLoader):
+    """
+    Load yolo data generating a 3D matrix ground truth (position and size probability)
+    """
     def __init__(self, images_file_list, batch_size: int, image_shape, annotation_shape, pyramid_size_list: list,
                  shuffle=True):
         super().__init__(images_file_list, batch_size, image_shape, annotation_shape, shuffle)
         self.pyramid_size_list = pyramid_size_list
 
-    def __getitem__(self, idx: int):
-        images = self.image_list[idx * self.batch_size:(idx + 1) * self.batch_size]
-        data = [self.load_yolo_pair(i) for i in images]
-        return np.array([d[0] for d in data]), np.array([d[1] for d in data])
+    def load_data_list(self, image_path_list):
+        data = [self.load_yolo_pair(i) for i in image_path_list]
+        return np.array([d[0] for d in data], dtype=np.float16), np.array([d[1] for d in data], dtype=np.float16)
 
     def load_yolo_gt(self, file_path: str, class_to_load=("0",)):
         raw = np.zeros(self.annotation_shape + (len(self.pyramid_size_list), 1))

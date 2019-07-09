@@ -98,11 +98,9 @@ def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
     per_image_results = []
     for det in raw:
         results = []
-        print("next frame")
         while True:
             pos = np.unravel_index(np.argmax(det), det.shape)
             confidence = det[pos]
-            print(confidence, pos, threshold)
             if confidence < threshold:
                 break
             else:
