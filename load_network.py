@@ -8,8 +8,8 @@ from utils import *
 
 angle_count = 4
 start_angle = math.pi / 4.0
-edge_kernel_size = 5
-line_detection_filter_size = 5
+edge_kernel_size = 3
+line_detection_filter_size = 3
 square_detection_square_size_count = 2
 square_detection_min_square_size = 3
 square_detection_max_square_size = 4
