@@ -10,10 +10,13 @@ angle_count = 4
 start_angle = math.pi / 4.0
 edge_kernel_size = 3
 line_detection_filter_size = 3
+bounded_line_detection_filter_size = 5
 square_detection_square_size_count = 2
 square_detection_min_square_size = 3
 square_detection_max_square_size = 4
-square_detection_kernel_size = 11
+square_detection_kernel_size = 3
+
+
 # detection_filter_filter_size = 5
 # detection_filter_dmz_size = 1
 # detection_filter_penalty = -0.1
@@ -58,15 +61,35 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         start_angle=start_angle,
         padding='same'
     )
-    square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
-        input_filter_count=angle_count,
-        filter_count=square_detection_square_size_count,
-        min_square_size=square_detection_min_square_size,
-        max_square_size=square_detection_max_square_size,
-        kernel_size=square_detection_kernel_size,
+    mi, ma, c = square_detection_min_square_size, square_detection_max_square_size, square_detection_square_size_count
+    lines_lengths = [mi + (ma - mi) / (c - 1) * i for i in range(c)]
+    bline_layer, b_line_weights, b_line_bias = get_bounded_line_detection_layer_and_weights(
+        filter_count=angle_count,
+        angle_increment=math.pi * 2 / angle_count,
+        filter_size=bounded_line_detection_filter_size,
         start_angle=start_angle,
+        line_lengths=lines_lengths,
         padding='same'
     )
+    bsquare_layer, bsquare_weights, bsquare_bias = get_square_detection_layer_and_weights_from_bounded_lines(
+        filter_count=angle_count * square_detection_square_size_count,
+        angle_increment=math.pi * 2 / angle_count,
+        filter_size=square_detection_kernel_size,
+        start_angle=start_angle,
+        line_lengths=lines_lengths,
+        pooling_before=2,
+        padding='same'
+    )
+
+    # square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
+    #     input_filter_count=angle_count,
+    #     filter_count=square_detection_square_size_count,
+    #     min_square_size=square_detection_min_square_size,
+    #     max_square_size=square_detection_max_square_size,
+    #     kernel_size=square_detection_kernel_size,
+    #     start_angle=start_angle,
+    #     padding='same'
+    # )
     max_pool_layer = MaxPool2D(pool_size=(2, 2), padding='same')
     # filter_layer, filter_weights, filter_bias = get_detection_filter_layer_and_weights(
     #     filter_count=pyramid_depth - first_pyramid_output,
@@ -96,7 +119,13 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         pool = max_pool_layer(line)
         pyramid.append(pool)
 
-    squares = [square_layer(l) for l in pyramid[first_pyramid_output:]]
+    # squares = [square_layer(l) for l in pyramid[first_pyramid_output:]]
+    squares = []
+    for l in pyramid[first_pyramid_output:]:
+        x = bline_layer(l)
+        x = max_pool_layer(x)
+        x = bsquare_layer(x)
+        squares.append(x)
 
     upsamplings = []
     for i, s in enumerate(squares):
@@ -129,7 +158,9 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         print("Loading preset weights")
         model.get_layer("EdgeDetector").set_weights((edge_weights, edge_bias))
         model.get_layer("LineDetector").set_weights((line_weights, line_bias))
-        model.get_layer("SquareDetector").set_weights((square_weights, square_bias))
+        # model.get_layer("SquareDetector").set_weights((square_weights, square_bias))
+        model.get_layer("BoundedLineDetector").set_weights((b_line_weights, b_line_bias))
+        model.get_layer("SquareByLineDetector").set_weights((bsquare_weights, bsquare_bias))
         # model.get_layer("DetectionFiltering").set_weights((filter_weights, filter_bias))
         # model.get_layer("Score").set_weights((score_weights, score_bias))
         # model.get_layer("Size").set_weights((size_weights, score_bias))

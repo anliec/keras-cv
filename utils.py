@@ -106,7 +106,11 @@ def bounded_line_detection_filter(filter_size, line_length, line_offset, line_an
         lx, ly = f(x)
         negative_points_x += lx
         negative_points_y += ly
-    negative_weight = -1.0 / len(negative_points_y)
+    try:
+        negative_weight = -1.0 / len(negative_points_y)
+    except ZeroDivisionError as e:
+        print(e)
+        negative_weight = -1.0
     positive_weight = 1.0 / len(positive_points_y)
     filter_matrix[(negative_points_y, negative_points_x)] = negative_weight
     filter_matrix[(positive_points_y, positive_points_x)] = positive_weight
@@ -210,7 +214,7 @@ def get_bounded_line_detection_weights(filter_count: int, angle_increment: float
                              filter_size,
                              filter_count,
                              filter_count * len(line_lengths)))
-    bias = np.zeros(shape=filter_count)
+    bias = np.zeros(shape=filter_count * len(line_lengths))
 
     for i, l in enumerate(line_lengths):
         out_offset = i * filter_count
@@ -226,15 +230,65 @@ def get_bounded_line_detection_weights(filter_count: int, angle_increment: float
 def get_bounded_line_detection_layer_and_weights(filter_count: int, angle_increment: float, line_lengths: list,
                                                  filter_size: int = 5, start_angle: float = 0.0, padding='same',
                                                  activation='relu'):
-    layer = Conv2D(filter_count,
-                   (filter_size, filter_size * len(line_lengths)),
+    layer = Conv2D(filter_count * len(line_lengths),
+                   (filter_size, filter_size),
                    padding=padding,
                    kernel_initializer='normal',
                    use_bias=True,
                    activation=activation,
-                   name="LineDetector")
+                   name="BoundedLineDetector")
     kernel, bias = get_bounded_line_detection_weights(filter_count, angle_increment, line_lengths, filter_size,
                                                       start_angle)
+    return layer, kernel, bias
+
+
+def get_square_detection_weights_from_bounded_lines(filter_count: int, angle_increment: float, line_lengths: list,
+                                                    filter_size: int = 5, start_angle: float = 0.0,
+                                                    pooling_before: int = 1):
+    assert angle_increment == math.pi / 2.0
+    kernel = np.zeros(shape=(filter_size,
+                             filter_size,
+                             filter_count,
+                             len(line_lengths)))
+    bias = np.zeros(shape=len(line_lengths))
+
+    for i, length in enumerate(line_lengths):
+        for j in range(4):
+            a = (math.pi / 4.0) + start_angle + j * (math.pi / 2.0)
+            d = length / 2.0
+            # convert polar to cartesian
+            x = math.cos(a) * d
+            y = math.sin(a) * d
+            # apply pooling scaling factor
+            x /= pooling_before
+            y /= pooling_before
+            # center coordinates of filter
+            x += (filter_size - 1) // 2
+            y += (filter_size - 1) // 2
+            # get integer coordinates
+            x = int(x)
+            y = int(y)
+            # ensure coordinates on filter
+            x = min(filter_size - 1, max(0, x))
+            y = min(filter_size - 1, max(0, y))
+            # set kernel value
+            kernel[x, y, i * len(line_lengths) + j, i] = 1.0
+    return kernel, bias
+
+
+def get_square_detection_layer_and_weights_from_bounded_lines(filter_count: int, angle_increment: float,
+                                                              line_lengths: list, filter_size: int = 5,
+                                                              start_angle: float = 0.0, pooling_before: int = 1,
+                                                              padding='same', activation='relu'):
+    layer = Conv2D(len(line_lengths),
+                   (filter_size, filter_size),
+                   padding=padding,
+                   kernel_initializer='normal',
+                   use_bias=True,
+                   activation=activation,
+                   name="SquareByLineDetector")
+    kernel, bias = get_square_detection_weights_from_bounded_lines(filter_count, angle_increment, line_lengths,
+                                                                   filter_size, start_angle, pooling_before)
     return layer, kernel, bias
 
 
