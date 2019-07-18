@@ -27,7 +27,7 @@ square_detection_kernel_size = 3
 
 def load_network(size_value, random_init: bool = False, first_pyramid_output: int = 2, pyramid_depth: int = 7):
     assert len(size_value) == 2
-    k = math.pow(2, pyramid_depth - 1)
+    k = math.pow(2, pyramid_depth)
     for i, v in enumerate(size_value):
         v -= (v - edge_kernel_size + 1) % k
         size_value[i] = int(v)
@@ -44,6 +44,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
             sizes.append(square_size * factor)
 
     print("Pyramid setup to track sizes: {}".format(sizes))
+    print("Sizes on a 1080p video: {}".format([int(s / height * 1080) for s in sizes]))
 
     # create layers
     input_layer = Input(shape=(height, width, 3))
@@ -129,7 +130,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
 
     upsamplings = []
     for i, s in enumerate(squares):
-        n = math.pow(2, i)
+        n = int(math.pow(2, i))
         up = UpSampling2D(size=(n, n), interpolation='bilinear')(s)
         upsamplings.append(up)
 
