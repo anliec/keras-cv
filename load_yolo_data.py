@@ -4,7 +4,7 @@ import cv2
 import multiprocessing
 import numpy as np
 import itertools
-from keras.utils import Sequence
+from tensorflow.python.keras.utils import Sequence
 import random
 from bisect import bisect_left
 from math import ceil

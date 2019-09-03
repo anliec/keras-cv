@@ -1,9 +1,9 @@
 import numpy as np
-from keras import backend as K
-from keras.layers import Input, MaxPool2D, Conv2D, UpSampling2D, \
+from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.layers import Input, MaxPool2D, Conv2D, UpSampling2D, \
     Concatenate, Maximum, Add, Activation, Lambda, BatchNormalization, Softmax, Reshape
-from keras.models import Model
-from keras.activations import softmax
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.activations import softmax
 from utils import *
 
 angle_count = 4

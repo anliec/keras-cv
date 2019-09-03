@@ -8,7 +8,7 @@ from loss import detection_loss, raw_output_loss
 from detection_processing import process_detection, draw_roi, Roi, process_detection_raw
 from metrics import map_metric
 
-from keras.utils.vis_utils import plot_model, model_to_dot
+from tensorflow.python.keras.utils.vis_utils import plot_model, model_to_dot
 
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
