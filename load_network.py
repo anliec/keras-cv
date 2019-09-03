@@ -135,7 +135,10 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         upsamplings.append(up)
 
     concat = Concatenate(axis=3)(upsamplings)
-    s = [s.value for s in concat.shape[1:]]
+    try:
+        s = [s.value for s in concat.shape[1:]]
+    except AttributeError:
+        s = concat.shape[1:]
     concat = Reshape(target_shape=s + [1])(concat)
 
     # filtered = filter_layer(concat)
