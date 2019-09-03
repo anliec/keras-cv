@@ -16,8 +16,9 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model, sizes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=4,
                                 first_pyramid_output=0)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
-    input_shape = model.layers[0].input_shape[1:3]
-    annotation_shape = model.layers[-1].output_shape[1:3]
+    input_shape = model.input.shape[1:3]
+    input_shape = int(input_shape[0]), int(input_shape[1])
+    annotation_shape = model.output.shape[1:3]
     annotation_shape = int(annotation_shape[0]), int(annotation_shape[1])
 
     images_list = list_data_from_dir(data_path, "*.jpg")
