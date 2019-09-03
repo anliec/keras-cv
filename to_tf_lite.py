@@ -1,8 +1,10 @@
 import tensorflow as tf
+from loss import raw_output_loss
 
 
 def keras_to_tf_lite(keras_model_path: str, out_path: str) -> None:
-    converter = tf.lite.TFLiteConverter.from_keras_model_file(keras_model_path)
+    converter = tf.lite.TFLiteConverter.from_keras_model_file(keras_model_path,
+                                                              custom_objects={'raw_loss': raw_output_loss()})
     tflite_model = converter.convert()
     open(out_path, "wb").write(tflite_model)
 
