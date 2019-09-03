@@ -75,6 +75,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
 
     model.save("model.h5")
+    model.save("model_no_optimizer.h5", include_optimizer=False)
 
 
 if __name__ == '__main__':
