@@ -9,6 +9,7 @@ from detection_processing import process_detection, draw_roi, Roi, process_detec
 from metrics import map_metric
 
 from tensorflow.python.keras.utils.vis_utils import plot_model, model_to_dot
+import tensorflow as tf
 
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
@@ -77,6 +78,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     model.save("model.h5")
     model.save("model_no_optimizer.h5", include_optimizer=False)
+
+    tf_session = tf.keras.backend.get_session(op_input_list=())
+    input_tensor = tf.get_default_graph().get_tensor_by_name(model.input._name)
+    output_tensor = tf.get_default_graph().get_tensor_by_name(model.output._name)
+    converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
+    tflite_model = converter.convert()
+    open("model.tflite", "wb").write(tflite_model)
 
 
 if __name__ == '__main__':
