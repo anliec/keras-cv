@@ -83,6 +83,19 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     input_tensor = tf.get_default_graph().get_tensor_by_name(model.input._name)
     output_tensor = tf.get_default_graph().get_tensor_by_name(model.output._name)
     converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+
+    def representative_dataset_gen():
+        for image_path in images_list_train:
+            im = cv2.imread(image_path)
+            im = cv2.resize(im, input_shape[::-1])
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+            im = im.astype(np.float32)
+            im /= im.max()
+            im = im.reshape((1,) + im.shape)
+            yield [im]
+
+    converter.representative_dataset = representative_dataset_gen
     tflite_model = converter.convert()
     open("model.tflite", "wb").write(tflite_model)
 
