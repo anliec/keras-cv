@@ -91,7 +91,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
             im = cv2.resize(im, input_shape[::-1])
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
             im = im.astype(np.float32)
-            im /= im.max()
+            im /= 255
             im = im.reshape((1,) + im.shape)
             yield [im]
 
