@@ -15,7 +15,7 @@ import tensorflow as tf
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
     model, sizes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=4,
-                                first_pyramid_output=0)
+                                first_pyramid_output=0, add_noise=True)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])

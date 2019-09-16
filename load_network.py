@@ -25,7 +25,8 @@ square_detection_kernel_size = 3
 # scale_initial_value = 1.0
 
 
-def load_network(size_value, random_init: bool = False, first_pyramid_output: int = 2, pyramid_depth: int = 7):
+def load_network(size_value, random_init: bool = False, first_pyramid_output: int = 2, pyramid_depth: int = 7,
+                 add_noise: bool = False):
     assert len(size_value) == 2
     k = math.pow(2, pyramid_depth)
     for i, v in enumerate(size_value):
@@ -168,6 +169,10 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         # model.get_layer("DetectionFiltering").set_weights((filter_weights, filter_bias))
         # model.get_layer("Score").set_weights((score_weights, score_bias))
         # model.get_layer("Size").set_weights((size_weights, score_bias))
+        if add_noise:
+            for l in model.layers:
+                for w in l.weights:
+                    w.assign_add((np.random.random(size=w.shape) * 0.2) - 0.1)
     else:
         print("Keeping random weights")
     model.summary()
