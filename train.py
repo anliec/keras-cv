@@ -79,7 +79,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model.save("model.h5")
     model.save("model_no_optimizer.h5", include_optimizer=False)
 
-    tf_session = tf.keras.backend.get_session(op_input_list=())
+    tf_session = tf.keras.backend.get_session()
     input_tensor = tf.get_default_graph().get_tensor_by_name(model.input._name)
     output_tensor = tf.get_default_graph().get_tensor_by_name(model.output._name)
     converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
