@@ -61,7 +61,7 @@ class YoloDataLoader(Sequence):
         im = cv2.resize(im, self.image_shape[::-1])
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         im = im.astype(np.float16)
-        im /= im.max()
+        im /= 255
         return im
 
     def load_yolo_pair(self, path_to_image: str):
