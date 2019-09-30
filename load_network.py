@@ -80,7 +80,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         start_angle=start_angle,
         line_lengths=lines_lengths,
         pooling_before=2,
-        padding='same'
+        padding='same',
+        activation='sigmoid'
     )
 
     # square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
