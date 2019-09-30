@@ -52,9 +52,9 @@ def raw_output_loss(score_tp_weight: float = 1.0, score_fp_weight: float = 0.5, 
         score_upper_bound_target = K.conv3d(y_true, g, padding="same")
         score_upper_bound_target = K.clip(score_upper_bound_target, score_min_bound, 1.0)
         # compute error for false detection (FP)
-        score_upper_error = K.clip(y_pred - score_upper_bound_target, 0.0, 1.0)
+        score_upper_error = K.maximum(y_pred - score_upper_bound_target, 0.0)
         # compute error for detection (TP)
-        score_lower_error = K.clip(y_true - y_pred, 0.0, 1.0)
+        score_lower_error = K.maximum(y_true - y_pred, 0.0)
 
         score_upper_mse = K.mean(K.square(score_upper_error))
         score_lower_mse = K.sum(K.square(score_lower_error)) / (K.sum(y_true) + K.epsilon())
