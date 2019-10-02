@@ -11,6 +11,35 @@ from metrics import map_metric
 from tensorflow.python.keras.utils.vis_utils import plot_model, model_to_dot
 import tensorflow as tf
 
+import matplotlib
+import matplotlib.pyplot as plt
+
+# solve plotting issues with matplotlib when no X connection is available
+matplotlib.use('Agg')
+
+
+def plot_history(history, base_name=""):
+    plt.clf()
+    # Plot training & validation accuracy values
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.savefig(base_name + "accuracy.png")
+    plt.clf()
+
+    # Plot training & validation loss values
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.savefig(base_name + "loss.png")
+    plt.clf()
+
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
@@ -38,7 +67,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     #                     validation_data=YoloDataLoader(images_list_test, batch_size, input_shape, annotation_shape),
     #                     epochs=epoch, shuffle=True)
     model.compile(optimizer='sgd',
-                  loss=raw_output_loss(score_min_bound=0.1, gaussian_diameter=11, gaussian_height=3),
+                  loss=raw_output_loss(score_min_bound=0.01, gaussian_diameter=11, gaussian_height=3,
+                                       score_fp_weight=10, score_tp_weight=1),
                   # metrics=[map_metric()]
                   )
 
@@ -47,7 +77,9 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     test_sequence = RawYoloDataLoader(images_list_test, batch_size, input_shape, annotation_shape,
                                       pyramid_size_list=sizes)
 
-    model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True)
+    history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True)
+
+    plot_history(history, "nNet")
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)
