@@ -57,7 +57,7 @@ def raw_output_loss(score_tp_weight: float = 1.0, score_fp_weight: float = 0.5, 
         score_lower_error = K.maximum(y_true - y_pred, 0.0)
 
         number_of_true_detection = (K.sum(y_true) + K.epsilon())
-        score_upper_mse = K.sum(K.square(score_upper_error)) / number_of_true_detection
+        score_upper_mse = K.mean(K.square(score_upper_error))
         score_lower_mse = K.sum(K.square(score_lower_error)) / number_of_true_detection
         score_mse = score_tp_weight * score_lower_mse + score_fp_weight * score_upper_mse
 
