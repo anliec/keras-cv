@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from glob import glob
 import os
-
+import datetime
 import tensorflow as tf
 
 from detection_processing import process_detection_raw
@@ -39,7 +39,31 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, im
 
     pred_roi = process_detection_raw(prediction, sizes, threshold)
 
-    for rois, image_path in zip(test_sequence)
+    detection = [{"frame_number": os.path.basename(image_path),
+                      "signs": [{"coodinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
+                 for rois, image_path in zip(pred_roi, test_sequence.images_list)]
+
+    output = {
+        "output": {
+            "frame_cfg": {
+                "dir": os.path.realpath(image_path),
+            },
+            "framework": {
+                "name": "Nnet",
+                "version": "Alpha 0",
+                "test_date": datetime.datetime().strftime("%A %d. %B %Y"),
+                "weights": "yolo3-tiny_gtsdb_final.weights"
+            },
+            "frames": detection
+        }
+
+    for rois, image_path in zip(pred_roi, test_sequence.images_list):
+        image_dict = {"frame_number": os.path.basename(image_path),
+                      "signs": [{"coodinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
+
+        for roi in rois:
+            s =
+
 
 
 
