@@ -53,7 +53,7 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, ou
             "framework": {
                 "name": "Nnet",
                 "version": "Alpha 0",
-                "test_date": datetime.datetime().strftime("%A %d. %B %Y"),
+                "test_date": datetime.datetime.now().strftime("%A %d. %B %Y"),
                 "weights": "yolo3-tiny_gtsdb_final.weights"
             },
             "frames": detection
