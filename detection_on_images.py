@@ -5,7 +5,6 @@ import os
 import datetime
 import tensorflow as tf
 import json
-import time
 
 from detection_processing import process_detection_raw
 
@@ -42,7 +41,7 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, ou
     pred_roi = process_detection_raw(prediction, sizes, threshold)
 
     detection = [{"frame_number": os.path.basename(image_path),
-                  "signs": [{"coodinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
+                  "signs": [{"coordinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
                  for rois, image_path in zip(pred_roi, test_sequence.images_list)]
 
     output = {
@@ -54,7 +53,6 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, ou
                 "name": "Nnet",
                 "version": "Alpha 0",
                 "test_date": datetime.datetime.now().strftime("%A %d. %B %Y"),
-                "weights": "yolo3-tiny_gtsdb_final.weights"
             },
             "frames": detection
         }
