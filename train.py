@@ -68,7 +68,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     #                     epochs=epoch, shuffle=True)
     model.compile(optimizer='sgd',
                   loss=raw_output_loss(score_min_bound=0.01, gaussian_diameter=11, gaussian_height=3,
-                                       score_fp_weight=10, score_tp_weight=1),
+                                       score_fp_weight=0.001, score_tp_weight=1),
                   # metrics=[map_metric()]
                   )
 
@@ -113,8 +113,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model.save_weights("model_weights.h5", overwrite=True)
 
     tf_session = tf.compat.v1.keras.backend.get_session()
-    input_tensor = tf.get_default_graph().get_tensor_by_name(model.input._name)
-    output_tensor = tf.get_default_graph().get_tensor_by_name(model.output._name)
+    input_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.input._name)
+    output_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.output._name)
     converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
