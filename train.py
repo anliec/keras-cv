@@ -21,14 +21,14 @@ matplotlib.use('Agg')
 def plot_history(history, base_name=""):
     plt.clf()
     # Plot training & validation accuracy values
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(base_name + "accuracy.png")
-    plt.clf()
+    # plt.plot(history.history['acc'])
+    # plt.plot(history.history['val_acc'])
+    # plt.title('Model accuracy')
+    # plt.ylabel('Accuracy')
+    # plt.xlabel('Epoch')
+    # plt.legend(['Train', 'Validation'], loc='upper left')
+    # plt.savefig(base_name + "accuracy.png")
+    # plt.clf()
 
     # Plot training & validation loss values
     plt.plot(history.history['loss'])
