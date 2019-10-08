@@ -4,7 +4,7 @@ import os
 from time import time
 from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader
 from load_network import load_network
-from loss import detection_loss, raw_output_loss
+from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, process_detection_raw
 from metrics import map_metric
 
@@ -59,8 +59,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     images_list_test = images_list[split:]
 
     model.compile(optimizer='sgd',
-                  loss=raw_output_loss(score_min_bound=0.01, gaussian_diameter=11, gaussian_height=3,
-                                       score_fp_weight=0.001, score_tp_weight=1)
+                  loss=SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
                   )
 
     train_sequence = SSDLikeYoloDataLoader(images_list_train, batch_size, input_shape, shapes,
