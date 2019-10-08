@@ -9,6 +9,7 @@ import math
 
 from detection_processing import process_detection_raw
 from load_network import load_network
+from load_yolo_data import read_yolo_image
 
 
 class ImageSequence(tf.keras.utils.Sequence):
@@ -21,17 +22,10 @@ class ImageSequence(tf.keras.utils.Sequence):
     def __len__(self):
         return math.ceil(len(self.images_list) / self.batch_size)
 
-    def load_yolo_image(self, image_path: str):
-        im = cv2.imread(image_path)
-        im = cv2.resize(im, self.image_size[::-1])
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        im = im.astype(np.float16)
-        im /= 255
-        return im
-
     def __getitem__(self, idx):
         i = self.batch_size * idx
-        return np.array([self.load_yolo_image(p) for p in self.images_list[i:i + self.batch_size]], dtype=np.float16)
+        return np.array([read_yolo_image(p, self.image_size) for p in self.images_list[i:i + self.batch_size]],
+                        dtype=np.float16)
 
 
 def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, output_file_path: str = None,

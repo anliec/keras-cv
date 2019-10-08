@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 from time import time
-from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader
+from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image
 from load_network import load_network
 from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, process_detection_raw
@@ -112,11 +112,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     def representative_dataset_gen():
         for image_path in images_list_train:
-            im = cv2.imread(image_path)
-            im = cv2.resize(im, input_shape[::-1])
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-            im = im.astype(np.float32)
-            im /= 255
+            im = read_yolo_image(image_path, input_shape)
             im = im.reshape((1,) + im.shape)
             yield [im]
 

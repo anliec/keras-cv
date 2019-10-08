@@ -1,13 +1,24 @@
 import glob
 import os
 import cv2
-import multiprocessing
 import numpy as np
-import itertools
 from tensorflow.python.keras.utils import Sequence
 import random
 from bisect import bisect_left
 from math import ceil
+
+RGB_AVERAGE = np.array([130.05339633, 117.94775357, 100.27196761], dtype=np.float32)
+RGB_STD = np.array([27.58063623, 27.12285032, 36.48646844], dtype=np.float32)
+
+
+def read_yolo_image(image_path: str, image_shape):
+    im = cv2.imread(image_path)
+    im = cv2.resize(im, image_shape[::-1])
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    im = im.astype(np.float32)
+    im -= RGB_AVERAGE
+    im /= RGB_STD
+    return im
 
 
 class YoloDataLoader(Sequence):
@@ -60,18 +71,10 @@ class YoloDataLoader(Sequence):
             sizes[y, x] = (h + w) / 2.0
         return scores, sizes
 
-    def load_yolo_image(self, image_path: str):
-        im = cv2.imread(image_path)
-        im = cv2.resize(im, self.image_shape[::-1])
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        im = im.astype(np.float16)
-        im /= 255
-        return im
-
     def load_yolo_pair(self, path_to_image: str):
         path_to_annotation = os.path.splitext(path_to_image)[0] + ".txt"
         gt = self.load_yolo_gt(path_to_annotation)
-        im = self.load_yolo_image(path_to_image)
+        im = read_yolo_image(path_to_image, self.image_shape)
         return im, gt
 
     # def load_yolo_pair_for_map(self, args):
