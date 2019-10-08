@@ -121,7 +121,7 @@ class SSDLikeLoss:
         # 1: Compute the losses for class and box predictions for every box.
 
         classification_loss = tf.compat.v1.to_float(
-            self.log_loss(y_true[:, :, :], y_pred[:, :, :]))  # Output shape: (batch_size, n_boxes)
+            self.log_loss(y_true, y_pred))  # Output shape: (batch_size, n_boxes)
         # localization_loss = tf.to_float(
         #     self.smooth_L1_loss(y_true[:, :, -12:-8], y_pred[:, :, -12:-8]))  # Output shape: (batch_size, n_boxes)
 

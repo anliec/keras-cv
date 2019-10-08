@@ -173,10 +173,13 @@ class SSDLikeYoloDataLoader(YoloDataLoader):
             r[:, :, 0] = 1.0
         # change the value at the bounding boxes coordinates
         for x, y, w, h, c in bounding_box_coordinates_list:
-            x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
-            y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
+            w = int(round(w * self.image_shape[1]))
+            h = int(round(h * self.image_shape[0]))
             size_index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
             shape_index = int(size_index // self.size_per_prediction_shape)
+            shape = self.annotation_shape[shape_index]
+            x = int(round(x * shape[1]))
+            y = int(round(y * shape[0]))
             raws[shape_index][y, x, c + 1] = 1.0
             raws[shape_index][y, x, 0] = 0.0
         concat_flatten_raws = np.concatenate([a.reshape(-1) for a in raws])

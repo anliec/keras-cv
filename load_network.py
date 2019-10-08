@@ -46,7 +46,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
             square_size = square_detection_min_square_size + square_size_increment * square_size_index
             sizes.append(square_size * factor)
 
-    prediction_shapes = [size_value / (2**(pyramid_level + 1))
+    prediction_shapes = [(size_value - (edge_kernel_size - 1)) / (2**(pyramid_level + 1))
                          for pyramid_level in range(first_pyramid_output, pyramid_depth)]
 
     print("Pyramid setup to track sizes: {}".format(sizes))
