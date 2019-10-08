@@ -120,7 +120,7 @@ class SSDLikeLoss:
 
         # 1: Compute the losses for class and box predictions for every box.
 
-        classification_loss = tf.to_float(
+        classification_loss = tf.compat.v1.to_float(
             self.log_loss(y_true[:, :, :], y_pred[:, :, :]))  # Output shape: (batch_size, n_boxes)
         # localization_loss = tf.to_float(
         #     self.smooth_L1_loss(y_true[:, :, -12:-8], y_pred[:, :, -12:-8]))  # Output shape: (batch_size, n_boxes)
@@ -129,7 +129,7 @@ class SSDLikeLoss:
 
         # Create masks for the positive and negative ground truth classes.
         negatives = y_true[:, :, 0]  # Tensor of shape (batch_size, n_boxes)
-        positives = tf.to_float(tf.reduce_max(y_true[:, :, 1:], axis=-1))  # Tensor of shape (batch_size, n_boxes)
+        positives = tf.compat.v1.to_float(tf.reduce_max(y_true[:, :, 1:], axis=-1))  # Tensor of shape (batch_size, n_boxes)
 
         # Count the number of positive boxes (classes 1 to n) in y_true across the whole batch.
         n_positive = tf.reduce_sum(positives)
@@ -182,7 +182,7 @@ class SSDLikeLoss:
                                            updates=tf.ones_like(indices, dtype=tf.int32),
                                            shape=tf.shape(
                                                neg_class_loss_all_1D))  # Tensor of shape (batch_size * n_boxes,)
-            negatives_keep = tf.to_float(
+            negatives_keep = tf.compat.v1.to_float(
                 tf.reshape(negatives_keep, [batch_size, n_boxes]))  # Tensor of shape (batch_size, n_boxes)
             # ...and use it to keep only those boxes and mask all other classification losses
             neg_class_loss = tf.reduce_sum(classification_loss * negatives_keep,
