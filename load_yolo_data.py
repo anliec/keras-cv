@@ -7,8 +7,8 @@ import random
 from bisect import bisect_left
 from math import ceil
 
-RGB_AVERAGE = np.array([130.05339633, 117.94775357, 100.27196761], dtype=np.float32)
-RGB_STD = np.array([27.58063623, 27.12285032, 36.48646844], dtype=np.float32)
+RGB_AVERAGE = np.array([100.27196761, 117.94775357, 130.05339633], dtype=np.float32)
+RGB_STD = np.array([36.48646844, 27.12285032, 27.58063623], dtype=np.float32)
 
 
 def read_yolo_image(image_path: str, image_shape):
