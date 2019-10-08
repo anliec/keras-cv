@@ -5,7 +5,7 @@ from time import time
 from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image
 from load_network import load_network
 from loss import SSDLikeLoss
-from detection_processing import process_detection, draw_roi, Roi, process_detection_raw
+from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
 from metrics import map_metric
 
 from tensorflow.python.keras.utils.vis_utils import plot_model, model_to_dot
@@ -71,24 +71,23 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     plot_history(history, "nNet")
 
-    return 0
+    detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
+                                             nms_threshold=0.5)
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)
     durations = []
     for i, (x_im, raw) in enumerate(test_sequence.data_list_iterator()):
         x = x_im.reshape((1,) + x_im.shape)
+        # predict result for the image
         start = time()
         raw_pred = model.predict(x)
         end = time()
+
         durations.append(end - start)
-        pred_norm = raw_pred - raw_pred.min()
-        pred_norm = pred_norm / pred_norm.max()
-        pred_norm_max = np.max(pred_norm, axis=3)
-        pred_norm_max = (pred_norm_max[0, :, :, 0] * 255).astype(np.uint8)
-        pred_norm_max = cv2.resize(pred_norm_max, (x_im.shape[1], x_im.shape[0]))
-        cv2.imwrite(os.path.join(out_dir, "{:03d}_pred_max.png".format(i)), pred_norm_max)
-        pred_roi = process_detection_raw(raw_pred, sizes, max(0.001, 0.95 * raw_pred.max()))
+        # process detection
+        pred_roi = detection_processor.process_detection(raw_pred)
+        # draw detections
         bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi)
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)

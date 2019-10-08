@@ -1,13 +1,15 @@
 import numpy as np
 import cv2
+import multiprocessing
 
 
 class Roi(object):
-    def __init__(self, confidence: float, center_pos, size):
+    def __init__(self, confidence: float, center_pos, size, class_name = 0):
         self.W = size
         self.H = size
         self.X = center_pos[0] - self.W / 2
         self.Y = center_pos[1] - self.H / 2
+        self.c = class_name
         if self.X < 0:
             self.W += self.X
             self.X = 0
@@ -98,6 +100,7 @@ def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
     per_image_results = []
     for det in raw:
         results = []
+
         while True:
             pos = np.unravel_index(np.argmax(det), det.shape)
             confidence = det[pos]
@@ -116,6 +119,72 @@ def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
     else:
         return per_image_results
 
+
+class DetectionProcessor:
+    def __init__(self, sizes: list, shapes: list, image_size, threshold: float = 0.5, nms_threshold: float = 0.5,
+                 use_multiprocessing: bool = True):
+        self.shapes = shapes
+        self.sizes = sizes
+        self.threshold = threshold
+        self.image_size = image_size
+        self.nms_threshold = nms_threshold
+        self.linear_index_shapes = []
+        i = 0
+        for w, h in self.shapes:
+            i += w * h
+            self.linear_index_shapes.append(i)
+        if len(shapes) != len(sizes):
+            assert len(sizes) % len(shapes) == 0
+            i = len(sizes) // len(shapes)
+            self.sizes = self.sizes[::i]
+        if use_multiprocessing:
+            self.pool = multiprocessing.Pool()
+            self.map_operation = self.pool.map
+        else:
+            self.map_operation = map
+
+    def unravel_index(self, index):
+        for i, v in enumerate(self.linear_index_shapes):
+            if v > index:
+                shape_index = v
+                break
+        else:
+            raise ValueError("unexpected index value given")
+        linear_index_in_shape = index - self.linear_index_shapes[shape_index - 1]
+        pos = np.unravel_index(linear_index_in_shape, self.shapes[shape_index])
+        pos = pos * self.image_size[0] / self.shapes[shape_index][0]
+        return pos, self.sizes[shape_index]
+
+    def pos_to_roi(self, pos, conf: float):
+        coord, size = self.unravel_index(pos[0])
+        return Roi(conf, coord, size, pos[1])
+
+    def process_image_detection(self, raw: np.ndarray):
+        pos = np.where(raw[:, 1:] > self.threshold)
+        prediction = [self.pos_to_roi(p, raw[p]) for p in zip(*pos)]
+        return self.non_max_suppression(prediction)
+
+    def non_max_suppression(self, prediction: list):
+        i1, i2 = 0, 0
+        while i1 < len(prediction):
+            p1 = prediction[i1]
+            i2 = i1 + 1
+            while i2 < len(prediction):
+                p2 = prediction[i2]
+                if p1.get_overlap(p2) > self.nms_threshold:
+                    if p1.confidence > p2.confidence:
+                        prediction.pop(i2)
+                        i2 -= 1
+                    else:
+                        prediction.pop(i1)
+                        i1 -= 1
+                        break
+                i2 += 1
+            i1 += 1
+        return prediction
+
+    def process_detection(self, raw: np.ndarray):
+        return self.map_operation(self.process_detection, raw)
 
 
 
