@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import os
+import multiprocessing
 from time import time
 from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image
 from load_network import load_network
@@ -71,8 +72,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     plot_history(history, "nNet")
 
+    pool = multiprocessing.Pool()
+
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
-                                             nms_threshold=0.5)
+                                             nms_threshold=0.5, multiprocessing_pool=pool)
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)

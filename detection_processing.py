@@ -122,7 +122,7 @@ def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
 
 class DetectionProcessor:
     def __init__(self, sizes: list, shapes: list, image_size, threshold: float = 0.5, nms_threshold: float = 0.5,
-                 use_multiprocessing: bool = True):
+                 multiprocessing_pool: multiprocessing.Pool = None):
         self.shapes = shapes
         self.sizes = sizes
         self.threshold = threshold
@@ -137,9 +137,8 @@ class DetectionProcessor:
             assert len(sizes) % len(shapes) == 0
             i = len(sizes) // len(shapes)
             self.sizes = self.sizes[::i]
-        if use_multiprocessing:
-            self.pool = multiprocessing.Pool()
-            self.map_operation = self.pool.map
+        if multiprocessing_pool is not None:
+            self.map_operation = multiprocessing_pool.map
         else:
             self.map_operation = map
 
