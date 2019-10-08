@@ -93,10 +93,9 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     classification_layer = Conv2D(filters=class_count + 1,
                                   kernel_size=(square_detection_kernel_size, square_detection_kernel_size),
                                   strides=(1, 1),
-                                  padding='valid',
+                                  padding='same',
                                   activation='linear',
                                   use_bias=True)
-    softmax_layer = Softmax(axis=3)
 
     # square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
     #     input_filter_count=angle_count,
@@ -107,7 +106,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     #     start_angle=start_angle,
     #     padding='same'
     # )
-    max_pool_layer = MaxPool2D(pool_size=(2, 2), padding='same')
+    # max_pool_layer = MaxPool2D(pool_size=(2, 2), padding='same')
     # filter_layer, filter_weights, filter_bias = get_detection_filter_layer_and_weights(
     #     filter_count=pyramid_depth - first_pyramid_output,
     #     dmz_size=detection_filter_dmz_size,
@@ -133,16 +132,16 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     pyramid = [edges, ]
     for i in range(1, pyramid_depth):
         line = line_layer(pyramid[-1])
-        pool = max_pool_layer(line)
+        pool = MaxPool2D(pool_size=(2, 2), padding='same')(line)
         pyramid.append(pool)
 
     # squares = [square_layer(l) for l in pyramid[first_pyramid_output:]]
     squares = []
     for l in pyramid[first_pyramid_output:]:
         x = bline_layer(l)
-        x = max_pool_layer(x)
+        x = MaxPool2D(pool_size=(2, 2), padding='same')(x)
         x = classification_layer(x)
-        x = softmax_layer(x)
+        x = Softmax(axis=3)(x)
         squares.append(x)
 
     # upsamplings = []
