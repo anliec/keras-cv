@@ -183,7 +183,7 @@ class SSDLikeYoloDataLoader(YoloDataLoader):
             y = int(round(y * shape[0]))
             raws[shape_index][y, x, c + 1] = 1.0
             raws[shape_index][y, x, 0] = 0.0
-        concat_flatten_raws = np.concatenate([a.reshape(-1) for a in raws])
+        concat_flatten_raws = np.concatenate([a.reshape(-1, self.class_count) for a in raws], axis=0)
         return concat_flatten_raws
 
 
