@@ -11,7 +11,8 @@ from math import ceil
 
 
 class YoloDataLoader(Sequence):
-    def __init__(self, images_file_list, batch_size: int, image_shape, annotation_shape, shuffle=True):
+    def __init__(self, images_file_list, batch_size: int, image_shape, annotation_shape, shuffle=True,
+                 class_to_load=("0",)):
         self.image_list = images_file_list
         self.batch_size = batch_size
         self.image_shape = image_shape
@@ -19,6 +20,8 @@ class YoloDataLoader(Sequence):
         if shuffle:
             random.shuffle(self.image_list)
         self.loaded_array = [None] * (int(ceil(len(self.image_list) / self.batch_size)))
+        self.class_to_load = list(class_to_load)
+        self.class_count = len(self.class_to_load)
 
     def __len__(self):
         return int(np.ceil(len(self.image_list) / float(self.batch_size)))
@@ -36,20 +39,21 @@ class YoloDataLoader(Sequence):
                       np.array([d[1][1].reshape(d[1][1].shape + (1,)) for d in data], dtype=np.float16)]
         return tuple_data
 
-    def load_yolo_gt(self, file_path: str, class_to_load=("0",)):
+    def load_yolo_gt(self, file_path: str, ):
         bb_coordinates = []
         with open(file_path, 'r') as gt:
             for line in gt:
                 vals = line.split(" ")
-                if vals[0] in class_to_load:
+                if vals[0] in self.class_to_load:
                     x, y, w, h = [float(v) for v in vals[1:]]
-                    bb_coordinates.append((x, y, w, h))
+                    c = self.class_to_load.index(vals[0])
+                    bb_coordinates.append((x, y, w, h, c))
         return self.get_annotation_from_yolo_gt_values(bb_coordinates)
 
     def get_annotation_from_yolo_gt_values(self, bounding_box_coordinates_list):
         scores = np.zeros(self.annotation_shape, dtype=np.float16)
         sizes = np.zeros(self.annotation_shape, dtype=np.float16)
-        for x, y, w, h in bounding_box_coordinates_list:
+        for x, y, w, h, c in bounding_box_coordinates_list:
             x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
             y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
             scores[y, x] = 1.0
@@ -129,7 +133,7 @@ class RawYoloDataLoader(YoloDataLoader):
 
     def get_annotation_from_yolo_gt_values(self, bounding_box_coordinates_list):
         raw = np.zeros(self.annotation_shape + (len(self.pyramid_size_list), 1), dtype=np.float16)
-        for x, y, w, h in bounding_box_coordinates_list:
+        for x, y, w, h, c in bounding_box_coordinates_list:
             x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
             y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
             index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
@@ -141,6 +145,43 @@ def list_data_from_dir(dir_path: str, images_regex: str = "*.jpg"):
     images = glob.glob(os.path.join(dir_path, images_regex))
     images = [i for i in images if os.path.isfile(os.path.splitext(i)[0] + ".txt")]
     return images
+
+
+class SSDLikeYoloDataLoader(YoloDataLoader):
+    """
+    Load yolo data generating a 2D matrix ground truth (linearised position x class)
+    """
+    def __init__(self, images_file_list, batch_size: int, image_shape, annotation_shapes: list, pyramid_size_list: list,
+                 shuffle=True, class_to_load=("0",)):
+        super().__init__(images_file_list, batch_size, image_shape, annotation_shapes, shuffle, class_to_load)
+        self.pyramid_size_list = pyramid_size_list
+        if len(pyramid_size_list) % len(annotation_shapes) != 0:
+            raise ValueError("The provided size and shapes are not compatible, please provide a correctly sized list"
+                             "(ex: list of the same size)")
+        self.num_boxes = sum([x * y for x, y in annotation_shapes])
+        self.class_count += 1  # add background class
+        self.size_per_prediction_shape = int(len(pyramid_size_list) // len(annotation_shapes))
+
+    def load_data_list(self, image_path_list):
+        data = [self.load_yolo_pair(i) for i in image_path_list]
+        return np.array([d[0] for d in data], dtype=np.float16), np.array([d[1] for d in data], dtype=np.float16)
+
+    def get_annotation_from_yolo_gt_values(self, bounding_box_coordinates_list):
+        raws = [np.zeros(shape=list(s) + [self.class_count], dtype=np.float16) for s in self.annotation_shape]
+        # set the background class to one on every predictions
+        for r in raws:
+            r[:, :, 0] = 1.0
+        # change the value at the bounding boxes coordinates
+        for x, y, w, h, c in bounding_box_coordinates_list:
+            x, w = [int(round(v * self.annotation_shape[1])) for v in [x, w]]
+            y, h = [int(round(v * self.annotation_shape[0])) for v in [y, h]]
+            size_index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
+            shape_index = int(size_index // self.size_per_prediction_shape)
+            raws[shape_index][y, x, c + 1] = 1.0
+            raws[shape_index][y, x, 0] = 0.0
+        concat_flatten_raws = np.concatenate([a.reshape(-1) for a in raws])
+        return concat_flatten_raws
+
 
 
 

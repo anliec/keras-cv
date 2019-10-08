@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 from time import time
-from load_yolo_data import list_data_from_dir, YoloDataLoader, RawYoloDataLoader
+from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader
 from load_network import load_network
 from loss import detection_loss, raw_output_loss
 from detection_processing import process_detection, draw_roi, Roi, process_detection_raw
@@ -43,8 +43,8 @@ def plot_history(history, base_name=""):
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
-    model, sizes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=4,
-                                first_pyramid_output=0, add_noise=True)
+    model, sizes, shapes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=4,
+                                        first_pyramid_output=0, add_noise=True)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
@@ -58,28 +58,21 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     images_list_train = images_list[:split]
     images_list_test = images_list[split:]
 
-    # model.compile(optimizer='sgd',
-    #               loss=detection_loss(score_min_bound=0.1, gaussian_diameter=5),
-    #               loss_weights={'Score': 1.0, 'Size': 0.000001}
-    #               # loss_weights={'Score': 1.0, 'Size': 0.0}
-    #               )
-    # model.fit_generator(YoloDataLoader(images_list_train, batch_size, input_shape, annotation_shape),
-    #                     validation_data=YoloDataLoader(images_list_test, batch_size, input_shape, annotation_shape),
-    #                     epochs=epoch, shuffle=True)
     model.compile(optimizer='sgd',
                   loss=raw_output_loss(score_min_bound=0.01, gaussian_diameter=11, gaussian_height=3,
-                                       score_fp_weight=0.001, score_tp_weight=1),
-                  # metrics=[map_metric()]
+                                       score_fp_weight=0.001, score_tp_weight=1)
                   )
 
-    train_sequence = RawYoloDataLoader(images_list_train, batch_size, input_shape, annotation_shape,
-                                       pyramid_size_list=sizes)
-    test_sequence = RawYoloDataLoader(images_list_test, batch_size, input_shape, annotation_shape,
-                                      pyramid_size_list=sizes)
+    train_sequence = SSDLikeYoloDataLoader(images_list_train, batch_size, input_shape, shapes,
+                                           pyramid_size_list=sizes)
+    test_sequence = SSDLikeYoloDataLoader(images_list_test, batch_size, input_shape, shapes,
+                                          pyramid_size_list=sizes)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True)
 
     plot_history(history, "nNet")
+
+    return 0
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)

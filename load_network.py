@@ -16,6 +16,7 @@ square_detection_min_square_size = 3
 square_detection_max_square_size = 4
 square_detection_kernel_size = 3
 
+class_count = 1  # excluding background (doesn't properly update hand crafted weights)
 
 # detection_filter_filter_size = 5
 # detection_filter_dmz_size = 1
@@ -34,6 +35,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         size_value[i] = int(v)
     print("Reshaped input size: {}".format(size_value))
     height, width = size_value
+    size_value = np.array(size_value)
 
     sizes = []
     square_size_increment = ((square_detection_max_square_size - square_detection_min_square_size)
@@ -44,8 +46,12 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
             square_size = square_detection_min_square_size + square_size_increment * square_size_index
             sizes.append(square_size * factor)
 
+    prediction_shapes = [size_value / (2**(pyramid_level + 1))
+                         for pyramid_level in range(first_pyramid_output, pyramid_depth)]
+
     print("Pyramid setup to track sizes: {}".format(sizes))
     print("Sizes on a 1080p video: {}".format([int(s / height * 1080) for s in sizes]))
+    print("Pyramid prediction shapes are: {}".format(prediction_shapes))
 
     # create layers
     input_layer = Input(shape=(height, width, 3))
@@ -73,16 +79,24 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         line_lengths=lines_lengths,
         padding='same'
     )
-    bsquare_layer, bsquare_weights, bsquare_bias = get_square_detection_layer_and_weights_from_bounded_lines(
-        filter_count=angle_count * square_detection_square_size_count,
-        angle_increment=math.pi * 2 / angle_count,
-        filter_size=square_detection_kernel_size,
-        start_angle=start_angle,
-        line_lengths=lines_lengths,
-        pooling_before=2,
-        padding='same',
-        activation='sigmoid'
-    )
+    # bsquare_layer, bsquare_weights, bsquare_bias = get_square_detection_layer_and_weights_from_bounded_lines(
+    #     filter_count=angle_count * square_detection_square_size_count,
+    #     angle_increment=math.pi * 2 / angle_count,
+    #     filter_size=square_detection_kernel_size,
+    #     start_angle=start_angle,
+    #     line_lengths=lines_lengths,
+    #     pooling_before=2,
+    #     padding='same',
+    #     activation='sigmoid'
+    # )
+
+    classification_layer = Conv2D(filters=class_count + 1,
+                                  kernel_size=(square_detection_kernel_size, square_detection_kernel_size),
+                                  strides=(1, 1),
+                                  padding='valid',
+                                  activation='linear',
+                                  use_bias=True)
+    softmax_layer = Softmax(axis=3)
 
     # square_layer, square_weights, square_bias = get_square_detection_layer_and_weights(
     #     input_filter_count=angle_count,
@@ -114,9 +128,9 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
 
     # create model
     edges = edge_layer(input_layer)
-    line = line_layer(edges)
+    # line = line_layer(edges)
     # pool = max_pool_layer(line)
-    pyramid = [line, ]
+    pyramid = [edges, ]
     for i in range(1, pyramid_depth):
         line = line_layer(pyramid[-1])
         pool = max_pool_layer(line)
@@ -127,21 +141,26 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     for l in pyramid[first_pyramid_output:]:
         x = bline_layer(l)
         x = max_pool_layer(x)
-        x = bsquare_layer(x)
+        x = classification_layer(x)
+        x = softmax_layer(x)
         squares.append(x)
 
-    upsamplings = []
-    for i, s in enumerate(squares):
-        n = int(math.pow(2, i))
-        up = UpSampling2D(size=(n, n), interpolation='bilinear')(s)
-        upsamplings.append(up)
+    # upsamplings = []
+    # for i, s in enumerate(squares):
+    #     n = int(math.pow(2, i))
+    #     up = UpSampling2D(size=(n, n), interpolation='bilinear')(s)
+    #     upsamplings.append(up)
+    #
+    # concat = Concatenate(axis=3)(upsamplings)
+    # try:
+    #     s = [s.value for s in concat.shape[1:]]
+    # except AttributeError:
+    #     s = concat.shape[1:]
+    # concat = Reshape(target_shape=s + [1])(concat)
 
-    concat = Concatenate(axis=3)(upsamplings)
-    try:
-        s = [s.value for s in concat.shape[1:]]
-    except AttributeError:
-        s = concat.shape[1:]
-    concat = Reshape(target_shape=s + [1])(concat)
+    flatten_squares = [Reshape(target_shape=(-1,))(x) for x in squares]
+
+    prediction = Concatenate()(flatten_squares)
 
     # filtered = filter_layer(concat)
 
@@ -156,7 +175,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     # input_shape = Lambda(lambda x: x * scale_factor, name="Size")(input_shape)
 
     # model = Model(inputs=input_layer, outputs=[score, size_value])
-    model = Model(inputs=input_layer, outputs=concat)
+    model = Model(inputs=input_layer, outputs=prediction)
     # model.compile("SGD", loss='mse')
 
     # set weights
@@ -166,7 +185,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         model.get_layer("LineDetector").set_weights((line_weights, line_bias))
         # model.get_layer("SquareDetector").set_weights((square_weights, square_bias))
         model.get_layer("BoundedLineDetector").set_weights((b_line_weights, b_line_bias))
-        model.get_layer("SquareByLineDetector").set_weights((bsquare_weights, bsquare_bias))
+        # model.get_layer("SquareByLineDetector").set_weights((bsquare_weights, bsquare_bias))
         # model.get_layer("DetectionFiltering").set_weights((filter_weights, filter_bias))
         # model.get_layer("Score").set_weights((score_weights, score_bias))
         # model.get_layer("Size").set_weights((size_weights, score_bias))
@@ -177,4 +196,4 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     else:
         print("Keeping random weights")
     model.summary()
-    return model, sizes
+    return model, sizes, prediction_shapes
