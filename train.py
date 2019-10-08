@@ -89,7 +89,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
         durations.append(end - start)
         # process detection
-        pred_roi = detection_processor.process_detection(raw_pred, map_operation=pool.map)
+        pred_roi = detection_processor.process_detection(raw_pred, pool=pool)
         # draw detections
         bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi)

@@ -177,8 +177,11 @@ class DetectionProcessor:
             i1 += 1
         return prediction
 
-    def process_detection(self, raw: np.ndarray, map_operation=map):
-        return map_operation(self.process_detection, raw)
+    def process_detection(self, raw: np.ndarray, pool: multiprocessing.Pool = None):
+        if pool is None:
+            return map(self.process_detection, raw)
+        else:
+            return pool.map(self.process_detection, raw)
 
 
 
