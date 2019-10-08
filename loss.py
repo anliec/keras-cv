@@ -87,7 +87,7 @@ class SSDLikeLoss:
         # Make sure that `y_pred` doesn't contain any zeros (which would break the log function)
         y_pred = tf.maximum(y_pred, 1e-15)
         # Compute the log loss
-        log_loss = -tf.reduce_sum(y_true * tf.log(y_pred), axis=-1)
+        log_loss = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
         return log_loss
 
     def compute_loss(self, y_true, y_pred):
