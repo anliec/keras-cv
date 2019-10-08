@@ -158,9 +158,9 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     #     s = concat.shape[1:]
     # concat = Reshape(target_shape=s + [1])(concat)
 
-    flatten_squares = [Reshape(target_shape=(-1,))(x) for x in squares]
+    flatten_squares = [Reshape(target_shape=(-1, class_count + 1))(x) for x in squares]
 
-    prediction = Concatenate()(flatten_squares)
+    prediction = Concatenate(axis=1)(flatten_squares)
 
     # filtered = filter_layer(concat)
 

@@ -167,7 +167,8 @@ class SSDLikeYoloDataLoader(YoloDataLoader):
         return np.array([d[0] for d in data], dtype=np.float16), np.array([d[1] for d in data], dtype=np.float16)
 
     def get_annotation_from_yolo_gt_values(self, bounding_box_coordinates_list):
-        raws = [np.zeros(shape=list(s) + [self.class_count], dtype=np.float16) for s in self.annotation_shape]
+        raws = [np.zeros(shape=list(s.astype(np.int)) + [self.class_count], dtype=np.float16)
+                for s in self.annotation_shape]
         # set the background class to one on every predictions
         for r in raws:
             r[:, :, 0] = 1.0
