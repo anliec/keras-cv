@@ -181,7 +181,7 @@ class DetectionProcessor:
         if pool is None:
             return map(self.process_detection, raw)
         else:
-            return pool.map(self.process_detection, raw)
+            return list(pool.map(self.process_detection, raw))
 
 
 
