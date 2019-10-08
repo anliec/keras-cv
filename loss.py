@@ -44,9 +44,12 @@ class SSDLikeLoss:
             alpha (float, optional): A factor to weight the localization loss in the
                 computation of the total loss. Defaults to 1.0 following the paper.
         '''
-        self.neg_pos_ratio = neg_pos_ratio
-        self.n_neg_min = n_neg_min
-        self.alpha = alpha
+        self.neg_pos_ratio = tf.constant(neg_pos_ratio)
+        self.n_neg_min = tf.constant(n_neg_min)
+        self.alpha = tf.constant(alpha)
+        # self.neg_pos_ratio = neg_pos_ratio
+        # self.n_neg_min = n_neg_min
+        # self.alpha = alpha
 
     @staticmethod
     def smooth_L1_loss(y_true, y_pred):
@@ -110,25 +113,22 @@ class SSDLikeLoss:
         Returns:
             A scalar, the total multitask loss for classification and localization.
         '''
-        self.neg_pos_ratio = tf.constant(self.neg_pos_ratio)
-        self.n_neg_min = tf.constant(self.n_neg_min)
-        self.alpha = tf.constant(self.alpha)
-
         batch_size = tf.shape(y_pred)[0]  # Output dtype: tf.int32
-        n_boxes = tf.shape(y_pred)[
-            1]  # Output dtype: tf.int32, note that `n_boxes` in this context denotes the total number of boxes per image, not the number of boxes per cell.
+        n_boxes = tf.shape(y_pred)[1]
+        # Output dtype: tf.int32, note that `n_boxes` in this context denotes the total number of boxes per image,
+        # not the number of boxes per cell.
 
         # 1: Compute the losses for class and box predictions for every box.
 
-        classification_loss = tf.cast(self.log_loss(y_true, y_pred), dtype=tf.float32)  # Output shape: (batch_size, n_boxes)
-        # localization_loss = tf.to_float(
-        #     self.smooth_L1_loss(y_true[:, :, -12:-8], y_pred[:, :, -12:-8]))  # Output shape: (batch_size, n_boxes)
+        classification_loss = tf.cast(self.log_loss(y_true, y_pred), dtype=tf.float32)
+        # Output shape: (batch_size, n_boxes)
 
         # 2: Compute the classification losses for the positive and negative targets.
 
         # Create masks for the positive and negative ground truth classes.
         negatives = y_true[:, :, 0]  # Tensor of shape (batch_size, n_boxes)
-        positives = tf.cast(tf.reduce_max(y_true[:, :, 1:], axis=-1), dtype=tf.float32)  # Tensor of shape (batch_size, n_boxes)
+        positives = tf.cast(tf.reduce_max(y_true[:, :, 1:], axis=-1), dtype=tf.float32)
+        # Tensor of shape (batch_size, n_boxes)
 
         # Count the number of positive boxes (classes 1 to n) in y_true across the whole batch.
         n_positive = tf.reduce_sum(positives)
@@ -154,7 +154,8 @@ class SSDLikeLoss:
         # is at most the number of negative boxes for which there is a positive classification loss.
 
         # Compute the number of negative examples we want to account for in the loss.
-        # We'll keep at most `self.neg_pos_ratio` times the number of positives in `y_true`, but at least `self.n_neg_min` (unless `n_neg_loses` is smaller).
+        # We'll keep at most `self.neg_pos_ratio` times the number of positives in `y_true`,
+        # but at least `self.n_neg_min` (unless `n_neg_loses` is smaller).
         n_negative_keep = tf.minimum(tf.maximum(self.neg_pos_ratio * tf.cast(n_positive, dtype=tf.int32),
                                                 self.n_neg_min),
                                      n_neg_losses)
@@ -182,7 +183,8 @@ class SSDLikeLoss:
                                            updates=tf.ones_like(indices, dtype=tf.int32),
                                            shape=tf.shape(
                                                neg_class_loss_all_1D))  # Tensor of shape (batch_size * n_boxes,)
-            negatives_keep = tf.cast(tf.reshape(negatives_keep, [batch_size, n_boxes]), dtype=tf.float32)  # Tensor of shape (batch_size, n_boxes)
+            negatives_keep = tf.cast(tf.reshape(negatives_keep, [batch_size, n_boxes]), dtype=tf.float32)
+            # Tensor of shape (batch_size, n_boxes)
             # ...and use it to keep only those boxes and mask all other classification losses
             neg_class_loss = tf.reduce_sum(classification_loss * negatives_keep,
                                            axis=-1)  # Tensor of shape (batch_size,)
