@@ -56,8 +56,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     images_list_train = images_list[:split]
     images_list_test = images_list[split:]
 
+    loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
+
     model.compile(optimizer='sgd',
-                  loss=SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
+                  loss=loss.compute_loss
                   )
 
     train_sequence = SSDLikeYoloDataLoader(images_list_train, batch_size, input_shape, shapes,
