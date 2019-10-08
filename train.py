@@ -68,14 +68,14 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     test_sequence = SSDLikeYoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                           pyramid_size_list=sizes)
 
-    history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True)
+    history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
+                                  use_multiprocessing=True)
 
     plot_history(history, "nNet")
 
     pool = multiprocessing.Pool()
-
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
-                                             nms_threshold=0.5, multiprocessing_pool=pool)
+                                             nms_threshold=0.5)
 
     out_dir = "debug/"
     os.makedirs(out_dir, exist_ok=True)
@@ -89,7 +89,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
         durations.append(end - start)
         # process detection
-        pred_roi = detection_processor.process_detection(raw_pred)
+        pred_roi = detection_processor.process_detection(raw_pred, map_operation=pool.map)
         # draw detections
         bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi)

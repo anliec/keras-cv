@@ -121,8 +121,7 @@ def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
 
 
 class DetectionProcessor:
-    def __init__(self, sizes: list, shapes: list, image_size, threshold: float = 0.5, nms_threshold: float = 0.5,
-                 multiprocessing_pool: multiprocessing.Pool = None):
+    def __init__(self, sizes: list, shapes: list, image_size, threshold: float = 0.5, nms_threshold: float = 0.5):
         self.shapes = shapes
         self.sizes = sizes
         self.threshold = threshold
@@ -137,10 +136,6 @@ class DetectionProcessor:
             assert len(sizes) % len(shapes) == 0
             i = len(sizes) // len(shapes)
             self.sizes = self.sizes[::i]
-        if multiprocessing_pool is not None:
-            self.map_operation = multiprocessing_pool.map
-        else:
-            self.map_operation = map
 
     def unravel_index(self, index):
         for i, v in enumerate(self.linear_index_shapes):
@@ -182,8 +177,8 @@ class DetectionProcessor:
             i1 += 1
         return prediction
 
-    def process_detection(self, raw: np.ndarray):
-        return self.map_operation(self.process_detection, raw)
+    def process_detection(self, raw: np.ndarray, map_operation=map):
+        return map_operation(self.process_detection, raw)
 
 
 
