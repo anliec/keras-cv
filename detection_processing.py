@@ -180,9 +180,9 @@ class DetectionProcessor:
 
     def process_detection(self, raw: np.ndarray, pool: multiprocessing.Pool = None):
         if pool is None:
-            return map(self.process_detection, raw)
+            return [self.process_image_detection(pred) for pred in raw]
         else:
-            return list(pool.map(self.process_detection, raw))
+            return [roi for roi in pool.map(self.process_image_detection, raw)]
 
 
 

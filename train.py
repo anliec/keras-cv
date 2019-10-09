@@ -89,10 +89,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
         durations.append(end - start)
         # process detection
-        pred_roi = detection_processor.process_detection(raw_pred, pool=pool)
+        pred_roi = detection_processor.process_detection(raw_pred, pool=None)
         # draw detections
         bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
-        bb_im = draw_roi(bb_im, pred_roi)
+        bb_im = draw_roi(bb_im, pred_roi[0])
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
 
@@ -106,21 +106,21 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model.save("model_no_optimizer.h5", include_optimizer=False)
     model.save_weights("model_weights.h5", overwrite=True)
 
-    tf_session = tf.compat.v1.keras.backend.get_session()
-    input_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.input._name)
-    output_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.output._name)
-    converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]
-
-    def representative_dataset_gen():
-        for image_path in images_list_train:
-            im = read_yolo_image(image_path, input_shape)
-            im = im.reshape((1,) + im.shape)
-            yield [im]
-
-    converter.representative_dataset = representative_dataset_gen
-    tflite_model = converter.convert()
-    open("model.tflite", "wb").write(tflite_model)
+    # tf_session = tf.compat.v1.keras.backend.get_session()
+    # input_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.input._name)
+    # output_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.output._name)
+    # converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
+    # converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    #
+    # def representative_dataset_gen():
+    #     for image_path in images_list_train:
+    #         im = read_yolo_image(image_path, input_shape)
+    #         im = im.reshape((1,) + im.shape)
+    #         yield [im]
+    #
+    # converter.representative_dataset = representative_dataset_gen
+    # tflite_model = converter.convert()
+    # open("model.tflite", "wb").write(tflite_model)
 
 
 if __name__ == '__main__':
