@@ -152,7 +152,7 @@ class DetectionProcessor:
 
     def pos_to_roi(self, pos, conf: float):
         coord, size = self.unravel_index(pos[0])
-        return Roi(conf, coord, size, pos[1], shape=self.image_size)
+        return Roi(conf, coord[::-1], size, pos[1], shape=self.image_size)
 
     def process_image_detection(self, raw: np.ndarray):
         pos = np.where(raw[:, 1:] > self.threshold)
