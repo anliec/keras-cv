@@ -45,8 +45,8 @@ def plot_history(history, base_name=""):
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
-    model, sizes, shapes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=4,
-                                        first_pyramid_output=0, add_noise=True)
+    model, sizes, shapes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=5,
+                                        first_pyramid_output=1, add_noise=True)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
@@ -88,7 +88,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     os.makedirs(out_dir, exist_ok=True)
     durations = []
     prediction_count = 0
-    for i, (x_im, raw) in enumerate(test_sequence.data_list_iterator()):
+    for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
         x = x_im.reshape((1,) + x_im.shape)
         # predict result for the image
         start = time()
@@ -103,6 +103,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         bb_im = draw_roi(bb_im, pred_roi[0])
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
+        # process gt
+        pred_roi = detection_processor.process_detection(y_raw.reshape((1,) + y_raw.shape), pool=None)
+        # draw gt
+        bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
+        bb_im = draw_roi(bb_im, pred_roi[0])
+        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
+        cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
         prediction_count += len(pred_roi[0])
 
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
