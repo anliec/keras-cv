@@ -128,10 +128,10 @@ class DetectionProcessor:
         self.threshold = threshold
         self.image_size = image_size
         self.nms_threshold = nms_threshold
-        self.linear_index_shapes = []
+        self.linear_index_shapes = [0]
         i = 0
         for w, h in self.shapes:
-            i += w * h
+            i += int(w * h)
             self.linear_index_shapes.append(i)
         if len(shapes) != len(sizes):
             assert len(sizes) % len(shapes) == 0
@@ -141,18 +141,18 @@ class DetectionProcessor:
     def unravel_index(self, index):
         for i, v in enumerate(self.linear_index_shapes):
             if v > index:
-                shape_index = v
+                shape_index = i - 1
                 break
         else:
             raise ValueError("unexpected index value given")
-        linear_index_in_shape = index - self.linear_index_shapes[shape_index - 1]
-        pos = np.unravel_index(linear_index_in_shape, self.shapes[shape_index])
-        pos = pos * self.image_size[0] / self.shapes[shape_index][0]
+        linear_index_in_shape = index - self.linear_index_shapes[shape_index]
+        pos = np.array(np.unravel_index(linear_index_in_shape, self.shapes[shape_index]))
+        pos = pos * (self.image_size[0] / self.shapes[shape_index][0])
         return pos, self.sizes[shape_index]
 
     def pos_to_roi(self, pos, conf: float):
         coord, size = self.unravel_index(pos[0])
-        return Roi(conf, coord[::-1], size, pos[1], shape=self.image_size)
+        return Roi(conf, coord, size, pos[1], shape=self.image_size)
 
     def process_image_detection(self, raw: np.ndarray):
         pos = np.where(raw[:, 1:] > self.threshold)

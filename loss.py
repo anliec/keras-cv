@@ -143,15 +143,18 @@ class SSDLikeLoss:
         # First, compute the classification loss for all negative boxes.
         neg_class_loss_all = classification_loss * negatives  # Tensor of shape (batch_size, n_boxes)
         n_neg_losses = tf.math.count_nonzero(neg_class_loss_all,
-                                             dtype=tf.int32)  # The number of non-zero loss entries in `neg_class_loss_all`
-        # What's the point of `n_neg_losses`? For the next step, which will be to compute which negative boxes enter the classification
-        # loss, we don't just want to know how many negative ground truth boxes there are, but for how many of those there actually is
-        # a positive (i.e. non-zero) loss. This is necessary because `tf.nn.top-k()` in the function below will pick the top k boxes with
-        # the highest losses no matter what, even if it receives a vector where all losses are zero. In the unlikely event that all negative
-        # classification losses ARE actually zero though, this behavior might lead to `tf.nn.top-k()` returning the indices of positive
-        # boxes, leading to an incorrect negative classification loss computation, and hence an incorrect overall loss computation.
-        # We therefore need to make sure that `n_negative_keep`, which assumes the role of the `k` argument in `tf.nn.top-k()`,
-        # is at most the number of negative boxes for which there is a positive classification loss.
+                                             dtype=tf.int32)
+        # The number of non-zero loss entries in `neg_class_loss_all`
+        # What's the point of `n_neg_losses`? For the next step, which will be to compute which negative boxes enter
+        # the classification loss, we don't just want to know how many negative ground truth boxes there are,
+        # but for how many of those there actually is a positive (i.e. non-zero) loss. This is necessary because
+        # `tf.nn.top-k()` in the function below will pick the top k boxes with the highest losses no matter what,
+        # even if it receives a vector where all losses are zero. In the unlikely event that all negative
+        # classification losses ARE actually zero though, this behavior might lead to `tf.nn.top-k()` returning the
+        # indices of positive boxes, leading to an incorrect negative classification loss computation, and hence an
+        # incorrect overall loss computation. We therefore need to make sure that `n_negative_keep`, which assumes
+        # the role of the `k` argument in `tf.nn.top-k()`, is at most the number of negative boxes for which there is
+        # a positive classification loss.
 
         # Compute the number of negative examples we want to account for in the loss.
         # We'll keep at most `self.neg_pos_ratio` times the number of positives in `y_true`,

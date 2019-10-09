@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import os
+import shutil
 import multiprocessing
 from time import time
 from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
@@ -51,11 +52,15 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     input_shape = int(input_shape[0]), int(input_shape[1])
 
     images_list = list_data_from_dir(data_path, "*.jpg")
+    if os.path.isdir("data/test"):
+        test_images_list = list_data_from_dir("data/test", "*.jpg")
+    else:
+        test_images_list = []
 
     split = int(round(len(images_list) * 0.9))
 
     images_list_train = images_list[:split]
-    images_list_test = images_list[split:]
+    images_list_test = images_list[split:] + test_images_list
 
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
@@ -69,7 +74,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                                           pyramid_size_list=sizes)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-                                  use_multiprocessing=True)
+                                  use_multiprocessing=False)
 
     plot_history(history, "nNet")
 
@@ -79,7 +84,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     out_dir = "debug/"
     if os.path.isdir(out_dir):
-        os.removedirs(out_dir)
+        shutil.rmtree(out_dir, ignore_errors=True)
     os.makedirs(out_dir, exist_ok=True)
     durations = []
     prediction_count = 0
