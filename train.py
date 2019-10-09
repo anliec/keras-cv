@@ -3,7 +3,7 @@ import cv2
 import os
 import multiprocessing
 from time import time
-from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image
+from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
 from load_network import load_network
 from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
@@ -73,13 +73,16 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     plot_history(history, "nNet")
 
-    pool = multiprocessing.Pool()
+    # pool = multiprocessing.Pool()
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.5)
 
     out_dir = "debug/"
+    if os.path.isdir(out_dir):
+        os.removedirs(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     durations = []
+    prediction_count = 0
     for i, (x_im, raw) in enumerate(test_sequence.data_list_iterator()):
         x = x_im.reshape((1,) + x_im.shape)
         # predict result for the image
@@ -91,16 +94,18 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         # process detection
         pred_roi = detection_processor.process_detection(raw_pred, pool=None)
         # draw detections
-        bb_im = (x_im * 255 / x_im.max()).astype(np.uint8)
+        bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi[0])
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
+        prediction_count += len(pred_roi[0])
 
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
     print("Fastest: {}s".format(min(durations)))
     print("Slowest: {}s".format(max(durations)))
 
     print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
+    print("{} bounding box predicted over {} frames".format(prediction_count, len(durations)))
 
     model.save("model.h5")
     model.save("model_no_optimizer.h5", include_optimizer=False)
