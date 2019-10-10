@@ -45,7 +45,7 @@ def plot_history(history, base_name=""):
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
-    model, sizes, shapes = load_network(size_value=[226, 402], random_init=random_init, pyramid_depth=5,
+    model, sizes, shapes = load_network(size_value=[221, 401], random_init=random_init, pyramid_depth=5,
                                         first_pyramid_output=1, add_noise=True)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
