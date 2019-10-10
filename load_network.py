@@ -77,7 +77,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
 
     squares = []
     prediction_shapes = []
-    for i in range(18, 18 + (19 * pyramid_level), 19):
+    first_layer = 18 + 19 * 3
+    for i in range(first_layer, first_layer + (19 * pyramid_level), 19):
         l = mobile_netv2.layers[i].output
         classification_layer = Conv2D(filters=class_count + 1,
                                       kernel_size=(square_detection_kernel_size, square_detection_kernel_size),
