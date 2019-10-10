@@ -182,8 +182,8 @@ class SSDLikeYoloDataLoader(YoloDataLoader):
             size_index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
             shape_index = int(size_index // self.size_per_prediction_shape)
             shape = self.annotation_shape[shape_index]
-            x = int(round(x * shape[1]))
-            y = int(round(y * shape[0]))
+            x = min(int(round(x * shape[1])), shape[1] - 1)
+            y = min(int(round(y * shape[0])), shape[0] - 1)
             raws[shape_index][y, x, c + 1] = 1.0
             raws[shape_index][y, x, 0] = 0.0
         concat_flatten_raws = np.concatenate([a.reshape(-1, self.class_count) for a in raws], axis=0)
