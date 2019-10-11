@@ -170,9 +170,6 @@ class DetectionProcessor:
             while i2 < len(prediction):
                 p2 = prediction[i2]
                 if p1.get_overlap(p2) > self.nms_threshold:
-                    p1.print()
-                    p2.print()
-                    print(p1.get_overlap(p2))
                     if p1.confidence > p2.confidence:
                         prediction.pop(i2)
                         i2 -= 1
