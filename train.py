@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import os
 import shutil
+import random
 import multiprocessing
 from time import time
 from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
@@ -43,6 +44,11 @@ def plot_history(history, base_name=""):
     plt.clf()
 
 
+def random_color():
+    levels = range(32, 256, 32)
+    return tuple(random.choice(levels) for _ in range(3))
+
+
 def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shape, out_dir: str):
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=1.1)
@@ -61,7 +67,8 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
         pred_roi = detection_processor.process_detection(concat_flatten_raws.reshape((1,) + concat_flatten_raws.shape),
                                                          pool=None)
         bb_im = np.zeros(input_shape + (3,), dtype=np.uint8)
-        bb_im = draw_roi(bb_im, pred_roi[0], width=1)
+        for roi in pred_roi[0]:
+            bb_im = draw_roi(bb_im, [roi], width=1, color=random_color())
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, "boxes_layers_{}.png".format(i)), bb_im)
         r[:, :, 1] = 0.0
