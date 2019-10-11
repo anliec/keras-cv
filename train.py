@@ -43,6 +43,30 @@ def plot_history(history, base_name=""):
     plt.clf()
 
 
+def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shape, out_dir: str):
+    detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
+                                             nms_threshold=0.5)
+
+    raws = [np.zeros(shape=list(s.astype(np.int)) + [class_count], dtype=np.float16)
+            for s in shapes]
+    # set the background class to one on every predictions
+    for r in raws:
+        r[:, :, 0] = 1.0
+
+    for i, r in enumerate(raws):
+        r[:, :, 1] = 1.0
+        r[:, :, 0] = 0.0
+
+        concat_flatten_raws = np.concatenate([a.reshape(-1, class_count) for a in raws], axis=0)
+
+        pred_roi = detection_processor.process_detection(concat_flatten_raws.reshape((1,) + concat_flatten_raws.shape),
+                                                         pool=None)
+        bb_im = np.zeros(input_shape + (3,), dtype=np.uint8)
+        bb_im = draw_roi(bb_im, pred_roi[0], width=2)
+        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(os.path.join(out_dir, "boxes_layers_{}.png".format(i)), bb_im)
+
+
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
     model, sizes, shapes = load_network(size_value=[221, 401], random_init=random_init, pyramid_depth=5,
@@ -50,6 +74,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
+
+    generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
 
     images_list = list_data_from_dir(data_path, "*.jpg")
     if os.path.isdir("data/test"):
@@ -88,6 +114,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     os.makedirs(out_dir, exist_ok=True)
     durations = []
     prediction_count = 0
+    gt_count = 0
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
         x = x_im.reshape((1,) + x_im.shape)
         # predict result for the image
@@ -101,23 +128,26 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         # draw detections
         bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi[0])
-        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
+        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
+        prediction_count += len(pred_roi[0])
         # process gt
         pred_roi = detection_processor.process_detection(y_raw.reshape((1,) + y_raw.shape), pool=None)
         # draw gt
         bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
         bb_im = draw_roi(bb_im, pred_roi[0])
-        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_BGR2RGB)
+        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
-        prediction_count += len(pred_roi[0])
+        gt_count += len(pred_roi[0])
 
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
     print("Fastest: {}s".format(min(durations)))
     print("Slowest: {}s".format(max(durations)))
 
     print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
-    print("{} bounding box predicted over {} frames".format(prediction_count, len(durations)))
+    print("{} bounding box predicted over {} frames, for {} boxes in ground truth".format(prediction_count,
+                                                                                          len(durations),
+                                                                                          gt_count))
 
     model.save("model.h5")
     model.save("model_no_optimizer.h5", include_optimizer=False)
