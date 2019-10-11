@@ -29,7 +29,7 @@ class Roi(object):
         return int(round(self.Y + self.H)), int(round(self.X + self.W))
 
     def print(self):
-        print("X; {} Y: {} W: {}".format(self.X, self.Y, self.W))
+        print("X: {} Y: {} W: {}".format(self.X, self.Y, self.W))
 
 
 def get_overlap(roi_gt, roi_detection):
@@ -52,7 +52,7 @@ def get_overlap(roi_gt, roi_detection):
     union_area = gt_area + det_area - inter_area
     # compute the intersection over union
     try:
-        overlap = inter_area * 100.0 / union_area
+        overlap = inter_area / union_area
     except ZeroDivisionError:
         overlap = 0.0
     # return the intersection over union value
@@ -147,7 +147,7 @@ class DetectionProcessor:
             raise ValueError("unexpected index value given")
         linear_index_in_shape = index - self.linear_index_shapes[shape_index]
         pos = np.array(np.unravel_index(linear_index_in_shape, self.shapes[shape_index]))
-        pos = pos * (self.image_size[0] / self.shapes[shape_index][0])
+        pos = pos * ((self.image_size[0] - 1) / (self.shapes[shape_index][0] - 1))
         return pos, self.sizes[shape_index]
 
     def pos_to_roi(self, pos, conf: float):
@@ -157,7 +157,10 @@ class DetectionProcessor:
     def process_image_detection(self, raw: np.ndarray):
         pos = np.where(raw[:, 1:] > self.threshold)
         prediction = [self.pos_to_roi(p, raw[p]) for p in zip(*pos)]
-        return self.non_max_suppression(prediction)
+        if self.nms_threshold > 1.0:
+            return prediction
+        else:
+            return self.non_max_suppression(prediction)
 
     def non_max_suppression(self, prediction: list):
         i1, i2 = 0, 0
@@ -167,6 +170,9 @@ class DetectionProcessor:
             while i2 < len(prediction):
                 p2 = prediction[i2]
                 if p1.get_overlap(p2) > self.nms_threshold:
+                    p1.print()
+                    p2.print()
+                    print(p1.get_overlap(p2))
                     if p1.confidence > p2.confidence:
                         prediction.pop(i2)
                         i2 -= 1
