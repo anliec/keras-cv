@@ -62,8 +62,11 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
         pred_roi = detection_processor.process_detection(concat_flatten_raws.reshape((1,) + concat_flatten_raws.shape),
                                                          pool=None)
         bb_im = np.zeros(input_shape + (3,), dtype=np.uint8)
+        print(bb_im.shape)
         bb_im = draw_roi(bb_im, pred_roi[0], width=2)
+        print(bb_im.max())
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
+        print(bb_im.max())
         cv2.imwrite(os.path.join(out_dir, "boxes_layers_{}.png".format(i)), bb_im)
 
 
