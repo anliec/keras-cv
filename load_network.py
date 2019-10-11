@@ -46,23 +46,19 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     #     size_value[i] = int(v)
     # print("Reshaped input size: {}".format(size_value))
     height, width = size_value
-    size_value = np.array(size_value)
+    # size_value = np.array(size_value)
+    #
+    # sizes = []
+    # square_size_increment = ((square_detection_max_square_size - square_detection_min_square_size)
+    #                          / square_detection_square_size_count)
+    # for pyramid_level in range(first_pyramid_output, pyramid_depth):
+    #     factor = math.pow(2, pyramid_level)
+    #     for square_size_index in range(square_detection_square_size_count):
+    #         square_size = square_detection_min_square_size + square_size_increment * square_size_index
+    #         sizes.append(square_size * factor)
 
-    sizes = []
-    square_size_increment = ((square_detection_max_square_size - square_detection_min_square_size)
-                             / square_detection_square_size_count)
-    for pyramid_level in range(first_pyramid_output, pyramid_depth):
-        factor = math.pow(2, pyramid_level)
-        for square_size_index in range(square_detection_square_size_count):
-            square_size = square_detection_min_square_size + square_size_increment * square_size_index
-            sizes.append(square_size * factor)
-
-    prediction_shapes = [((size_value - (edge_kernel_size - 1)) / (2**(pyramid_level + 1))).astype(np.int)
-                         for pyramid_level in range(first_pyramid_output, pyramid_depth)]
-
-    print("Pyramid setup to track sizes: {}".format(sizes))
-    print("Sizes on a 1080p video: {}".format([int(s / height * 1080) for s in sizes]))
-    print("Pyramid prediction shapes are: {}".format(prediction_shapes))
+    # prediction_shapes = [((size_value - (edge_kernel_size - 1)) / (2**(pyramid_level + 1))).astype(np.int)
+    #                      for pyramid_level in range(first_pyramid_output, pyramid_depth)]
 
     # input_layer = Input(shape=(height, width, 3))
 
@@ -77,8 +73,9 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
 
     squares = []
     prediction_shapes = []
+    sizes = [8, 13, 22, 40]  # optimised for curve signs
     first_layer = 18 + 19 * 1
-    for i in range(first_layer, first_layer + (19 * pyramid_level), 19):
+    for i in range(first_layer, first_layer + (19 * pyramid_depth), 19):
         l = mobile_netv2.layers[i].output
         classification_layer = Conv2D(filters=class_count + 1,
                                       kernel_size=(square_detection_kernel_size, square_detection_kernel_size),
@@ -90,6 +87,10 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
         x = Softmax(axis=3)(x)
         squares.append(x)
         prediction_shapes.append(np.array(x.shape[1:3]))
+
+    print("Pyramid setup to track sizes: {}".format(sizes))
+    print("Sizes on a 1080p video: {}".format([int(s / height * 1080) for s in sizes]))
+    print("Pyramid prediction shapes are: {}".format(prediction_shapes))
 
     # create layers
     # input_layer = Input(shape=(height, width, 3))
