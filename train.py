@@ -126,7 +126,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     fps = 1
     fps_nn = 1
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
-        seconds_left = (i-len(test_sequence.image_list)) / fps
+        seconds_left = (len(test_sequence.image_list) - i) / fps
         print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
               "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
               end="\r")
