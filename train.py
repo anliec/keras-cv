@@ -66,7 +66,7 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
 
         pred_roi = detection_processor.process_detection(concat_flatten_raws.reshape((1,) + concat_flatten_raws.shape),
                                                          pool=None)
-        bb_im = np.zeros(input_shape + (3,), dtype=np.uint8)
+        bb_im = np.zeros(input_shape + (3,), dtype=np.uint8) + 57
         for roi in pred_roi[0]:
             bb_im = draw_roi(bb_im, [roi], width=1, color=random_color())
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
@@ -123,7 +123,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     durations = []
     prediction_count = 0
     gt_count = 0
+    fps = 1
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
+        seconds_left = (i-len(test_sequence.image_list)) / fps
+        print("Processing Validation Frame {:4d}/{:d}  -  {:3d} fps  ETA: {} min {} sec"
+              "".format(i, len(test_sequence.image_list), fps, seconds_left // 60, round(seconds_left) % 60),
+              end="\r")
+        f_start = time()
         x = x_im.reshape((1,) + x_im.shape)
         # predict result for the image
         start = time()
@@ -147,7 +153,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
         gt_count += len(pred_roi[0])
+        f_end = time()
+        fps = 1 / (f_end - f_start)
 
+    print()
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
     print("Fastest: {}s".format(min(durations)))
     print("Slowest: {}s".format(max(durations)))

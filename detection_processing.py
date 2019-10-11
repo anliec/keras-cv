@@ -149,7 +149,7 @@ class DetectionProcessor:
         size = self.sizes[shape_index]
         pos = np.array(np.unravel_index(linear_index_in_shape, self.shapes[shape_index]), dtype=np.float32)
         # move the pos to the center of the pixel and scale it, then move to the top left corner
-        pos = (pos + 0.5) * (self.image_size[0] / self.shapes[shape_index][0]) - (size / 2.0)
+        pos = ((pos + 0.5) * (self.image_size[0] / self.shapes[shape_index][0]))
         return pos, size
 
     def pos_to_roi(self, pos, conf: float):
