@@ -158,6 +158,7 @@ class SSDLikeYoloDataLoader(YoloDataLoader):
                  shuffle=True, class_to_load=("0",)):
         super().__init__(images_file_list, batch_size, image_shape, annotation_shapes, shuffle, class_to_load)
         self.pyramid_size_list = pyramid_size_list
+        self.squared_pyramid_size_list = [s**2 for s in self.pyramid_size_list]
         if len(pyramid_size_list) % len(annotation_shapes) != 0:
             raise ValueError("The provided size and shapes are not compatible, please provide a correctly sized list"
                              "(ex: list of the same size)")
@@ -179,7 +180,8 @@ class SSDLikeYoloDataLoader(YoloDataLoader):
         for x, y, w, h, c in bounding_box_coordinates_list:
             w = int(round(w * self.image_shape[1]))
             h = int(round(h * self.image_shape[0]))
-            size_index = int(take_closest_index(self.pyramid_size_list, (h + w) / 2.0))
+            # chose the closest surface size index
+            size_index = int(take_closest_index(self.squared_pyramid_size_list, h * w))
             shape_index = int(size_index // self.size_per_prediction_shape)
             shape = self.annotation_shape[shape_index]
             x = min(max(int(round((x * shape[1]) - 0.5)), 0), shape[1] - 1)

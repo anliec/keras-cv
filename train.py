@@ -126,8 +126,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     fps = 1
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
         seconds_left = (i-len(test_sequence.image_list)) / fps
-        print("Processing Validation Frame {:4d}/{:d}  -  {:3d} fps  ETA: {} min {} sec"
-              "".format(i, len(test_sequence.image_list), int(fps), int(seconds_left // 60), int(seconds_left) % 60),
+        print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec"
+              "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60),
               end="\r")
         f_start = time()
         x = x_im.reshape((1,) + x_im.shape)
@@ -141,7 +141,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         pred_roi = detection_processor.process_detection(raw_pred, pool=None)
         # draw detections
         bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
-        bb_im = draw_roi(bb_im, pred_roi[0])
+        bb_im = draw_roi(bb_im, pred_roi[0][:100])
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
         prediction_count += len(pred_roi[0])
