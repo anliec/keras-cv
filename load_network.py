@@ -73,7 +73,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
 
     squares = []
     prediction_shapes = []
-    sizes = [8, 13, 22, 40]  # optimised for curve signs
+    sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
     first_layer = 18 + 19 * 1
     for i in range(first_layer, first_layer + (19 * pyramid_depth), 19):
         l = mobile_netv2.layers[i].output
