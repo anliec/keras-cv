@@ -62,31 +62,110 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
 
     # input_layer = Input(shape=(height, width, 3))
 
-    mobile_netv2 = MobileNetV2(input_shape=(height, width, 3),
-                               include_top=False,
-                               weights='imagenet'
-                               )
+    ####################################
+    # Mobile net v2 backbone
+    ####################################
 
-    mobile_netv2.summary()
+    # mobile_netv2 = MobileNetV2(input_shape=(height, width, 3),
+    #                            include_top=False,
+    #                            weights='imagenet'
+    #                            )
+    #
+    # mobile_netv2.summary()
+    #
+    # input_layer = mobile_netv2.inputs[0]
+    #
+    # squares = []
+    # prediction_shapes = []
+    # sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
+    # first_layer = 18 + 19 * 1
+    # for i in range(first_layer, first_layer + (19 * pyramid_depth), 19):
+    #     l = mobile_netv2.layers[i].output
+    #     classification_layer = Conv2D(filters=class_count + 1,
+    #                                   kernel_size=(square_detection_kernel_size, square_detection_kernel_size),
+    #                                   strides=(1, 1),
+    #                                   padding='same',
+    #                                   activation='linear',
+    #                                   use_bias=True)
+    #     x = classification_layer(l)
+    #     x = Softmax(axis=3)(x)
+    #     squares.append(x)
+    #     prediction_shapes.append(np.array(x.shape[1:3]))
 
-    input_layer = mobile_netv2.inputs[0]
+    ####################################
+    # Custome Backbone
+    ####################################
 
     squares = []
     prediction_shapes = []
     sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
-    first_layer = 18 + 19 * 1
-    for i in range(first_layer, first_layer + (19 * pyramid_depth), 19):
-        l = mobile_netv2.layers[i].output
-        classification_layer = Conv2D(filters=class_count + 1,
-                                      kernel_size=(square_detection_kernel_size, square_detection_kernel_size),
-                                      strides=(1, 1),
-                                      padding='same',
-                                      activation='linear',
-                                      use_bias=True)
-        x = classification_layer(l)
-        x = Softmax(axis=3)(x)
-        squares.append(x)
-        prediction_shapes.append(np.array(x.shape[1:3]))
+
+    input_layer = Input(shape=(height, width, 3))
+    x = Conv2D(filters=16, kernel_size=5, strides=2, activation="relu", padding='same')(input_layer)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=16, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=2, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True)(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
+
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True)(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
+
+    x = Conv2D(filters=64, kernel_size=3, strides=2, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True)(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True)(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True)(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
 
     print("Pyramid setup to track sizes: {}".format(sizes))
     print("Sizes on a 1080p video: {}".format([int(s / height * 1080) for s in sizes]))

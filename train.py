@@ -124,10 +124,11 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     prediction_count = 0
     gt_count = 0
     fps = 1
+    fps_nn = 1
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
         seconds_left = (i-len(test_sequence.image_list)) / fps
-        print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec"
-              "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60),
+        print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
+              "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
               end="\r")
         f_start = time()
         x = x_im.reshape((1,) + x_im.shape)
@@ -136,6 +137,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         raw_pred = model.predict(x)
         end = time()
 
+        fps_nn = 1 / (end - start)
         durations.append(end - start)
         # process detection
         pred_roi = detection_processor.process_detection(raw_pred, pool=None)
