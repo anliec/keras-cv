@@ -115,7 +115,6 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     # pool = multiprocessing.Pool()
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.5)
-
     out_dir = "debug/"
     if os.path.isdir(out_dir):
         shutil.rmtree(out_dir, ignore_errors=True)
@@ -171,6 +170,16 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model.save("model.h5")
     model.save("model_no_optimizer.h5", include_optimizer=False)
     model.save_weights("model_weights.h5", overwrite=True)
+
+    # Save a visualisation of the first layer
+    first_conv_weights = model.layers[1].get_weights()[0]
+    for i in range(first_conv_weights.shape[3]):
+        f = first_conv_weights[:, :, :, i]
+        for l in range(3):
+            f[:, :, l] += f[:, :, l].min()
+            f[:, :, l] /= f[:, :, l].max() * 255
+        f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
+        cv2.imwrite("Conv1_filter{}.png".format(i), f)
 
     # tf_session = tf.compat.v1.keras.backend.get_session()
     # input_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.input._name)
