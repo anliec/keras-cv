@@ -5,7 +5,7 @@ import shutil
 import random
 import multiprocessing
 from time import time
-from load_yolo_data import list_data_from_dir, SSDLikeYoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
+from load_yolo_data import list_data_from_dir, YoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
 from load_network import load_network
 from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
@@ -102,10 +102,12 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                   loss=loss.compute_loss
                   )
 
-    train_sequence = SSDLikeYoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                           pyramid_size_list=sizes)
-    test_sequence = SSDLikeYoloDataLoader(images_list_test, batch_size, input_shape, shapes,
-                                          pyramid_size_list=sizes)
+    train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
+                                    pyramid_size_list=sizes, disable_augmentation=False,
+                                    movement_range_width=0.2, movement_range_height=0.2,
+                                    zoom_range=(0.8, 1.2), flip=True, brightness_range=None)
+    test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
+                                   pyramid_size_list=sizes)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                   use_multiprocessing=False)
