@@ -77,14 +77,13 @@ class YoloDataLoader(Sequence):
             random.shuffle(self.image_list)
         self.loaded_array = [None] * (int(ceil(len(self.image_list) / self.batch_size)))
         self.class_to_load = set(class_to_load)
-        self.class_count = len(self.class_to_load) + 1
+        self.class_count = len(self.class_to_load) + 1  # add background class
         self.pyramid_size_list = pyramid_size_list
         self.squared_pyramid_size_list = [s ** 2 for s in self.pyramid_size_list]
         if len(pyramid_size_list) % len(annotation_shapes) != 0:
             raise ValueError("The provided size and shapes are not compatible, please provide a correctly sized list"
                              "(ex: list of the same size)")
         self.num_boxes = sum([x * y for x, y in annotation_shapes])
-        self.class_count += 1  # add background class
         self.size_per_prediction_shape = int(len(pyramid_size_list) // len(annotation_shapes))
         # Image augmentation
         self.disable_augmentation = disable_augmentation
