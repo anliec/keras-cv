@@ -1,22 +1,32 @@
 import glob
 import os
 import cv2
+import multiprocessing
 import numpy as np
 from tensorflow.keras.utils import Sequence
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import random
 from bisect import bisect_left
 from math import ceil
+import tensorflow as tf
+import itertools
+
 
 RGB_AVERAGE = np.array([100.27196761, 117.94775357, 130.05339633], dtype=np.float32)
 RGB_STD = np.array([36.48646844, 27.12285032, 27.58063623], dtype=np.float32)
 
 
-def read_yolo_image(image_path: str, image_shape):
+def read_yolo_image(image_path: str, image_shape, normalize: bool = True):
     im = cv2.imread(image_path)
     im = cv2.resize(im, image_shape[::-1])
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     im = im.astype(np.float32)
+    if normalize:
+        im = normalize_image(im)
+    return im
+
+
+def normalize_image(im: np.ndarray):
     im -= RGB_AVERAGE
     im /= RGB_STD
     return im
@@ -63,18 +73,26 @@ class YoloImageAnnotation:
         [b.transform(transform, image_shape) for b in self.boxes]
 
 
+def augment_data(data, image_generator, image_shape):
+    im, gt = data
+    transform = image_generator.get_random_transform(image_shape)
+    gt.apply_transform(transform, image_shape)
+    im = normalize_image(image_generator.apply_transform(im, transform))
+    return np.ascontiguousarray(im, dtype=np.float32), gt
+
+
 class YoloDataLoader(Sequence):
     def __init__(self, images_file_list, batch_size: int, image_shape, annotation_shapes, pyramid_size_list: list,
                  shuffle=True, class_to_load=(0,), zoom_range=(1.0, 1.0), movement_range_width=0.0,
                  movement_range_height=0.0, flip: bool = False, disable_augmentation: bool = True,
-                 brightness_range=None):
+                 brightness_range=None, use_multiprocessing: bool = False, pool: multiprocessing.Pool = None):
         self.image_list = images_file_list
         self.batch_size = batch_size
         self.image_shape = image_shape
         self.annotation_shape = annotation_shapes
         if shuffle:
             random.shuffle(self.image_list)
-        self.loaded_array = [None] * (int(ceil(len(self.image_list) / self.batch_size)))
+        self.loaded_array = [[]] * (int(ceil(len(self.image_list) / self.batch_size)))
         self.class_to_load = set(class_to_load)
         self.class_count = len(self.class_to_load) + 1  # add background class
         self.pyramid_size_list = pyramid_size_list
@@ -84,9 +102,11 @@ class YoloDataLoader(Sequence):
                              "(ex: list of the same size)")
         self.num_boxes = sum([x * y for x, y in annotation_shapes])
         self.size_per_prediction_shape = int(len(pyramid_size_list) // len(annotation_shapes))
+        self.use_multiprocessing = use_multiprocessing
+        self.pool = pool
         # Image augmentation
         self.disable_augmentation = disable_augmentation
-        self.image_generator = ImageDataGenerator(
+        self.image_generator = tf.keras.preprocessing.image.ImageDataGenerator(
             featurewise_center=False,
             samplewise_center=False,
             featurewise_std_normalization=False,
@@ -115,11 +135,17 @@ class YoloDataLoader(Sequence):
         return int(np.ceil(len(self.image_list) / float(self.batch_size)))
 
     def __getitem__(self, idx: int):
-        if self.loaded_array[idx] is None:
+        if len(self.loaded_array[idx]) == 0:
             images = self.image_list[idx * self.batch_size:(idx + 1) * self.batch_size]
             self.loaded_array[idx] = self.load_data_list(images)
         if not self.disable_augmentation:
-            data = [self.augment_data(im, gt) for im, gt in self.loaded_array[idx]]
+            if self.use_multiprocessing:
+                data = list(self.pool.starmap(augment_data, zip(self.loaded_array[idx],
+                                                                itertools.repeat(self.image_generator),
+                                                                itertools.repeat(self.image_shape)),
+                                              chunksize=int(self.batch_size / os.cpu_count()) + 1))
+            else:
+                data = [self.augment_data(im, gt) for im, gt in self.loaded_array[idx]]
         else:
             data = self.loaded_array[idx]
         return (np.array([d[0] for d in data], dtype=np.float16),
@@ -128,8 +154,8 @@ class YoloDataLoader(Sequence):
     def augment_data(self, im, gt: YoloImageAnnotation):
         transform = self.image_generator.get_random_transform(self.image_shape)
         gt.apply_transform(transform, self.image_shape)
-        im = self.image_generator.apply_transform(im, transform)
-        return np.ascontiguousarray(im, dtype=np.float16), gt
+        im = normalize_image(self.image_generator.apply_transform(im, transform))
+        return np.ascontiguousarray(im, dtype=np.float32), gt
 
     def load_data_list(self, image_path_list):
         return [self.load_yolo_pair(i) for i in image_path_list]
@@ -137,7 +163,7 @@ class YoloDataLoader(Sequence):
     def load_yolo_pair(self, path_to_image: str):
         path_to_annotation = os.path.splitext(path_to_image)[0] + ".txt"
         gt = YoloImageAnnotation(path_to_annotation)
-        im = read_yolo_image(path_to_image, self.image_shape)
+        im = read_yolo_image(path_to_image, self.image_shape, normalize=self.disable_augmentation)
         return im, gt
 
     def data_list_iterator(self):

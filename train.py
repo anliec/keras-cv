@@ -92,7 +92,6 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         test_images_list = []
 
     split = int(round(len(images_list) * 0.9))
-
     images_list_train = images_list[:split]
     images_list_test = images_list[split:] + test_images_list
 
@@ -102,10 +101,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                   loss=loss.compute_loss
                   )
 
+    pool = multiprocessing.Pool()
+
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.2, movement_range_height=0.2,
-                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=None)
+                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.5, 1.5),
+                                    use_multiprocessing=True, pool=pool)
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
 
@@ -114,7 +116,6 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     plot_history(history, "nNet")
 
-    # pool = multiprocessing.Pool()
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.5)
     out_dir = "debug/"
