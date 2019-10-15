@@ -46,9 +46,9 @@ class YoloBoundingBox:
         for more information on this dict content)
         :param image_shape: shape of the image corresponding to the transform (to get relative tx, ty)
         """
-        self.x = 0.5 + ((self.annotation_x - 0.5) / transform['zy']) - (transform['ty'] / image_shape[1])
+        self.x = 0.5 + ((self.annotation_x - (transform['ty'] / image_shape[1]) - 0.5) / transform['zy'])
         self.w = (self.annotation_w / transform['zy'])
-        self.y = 0.5 + ((self.annotation_y - 0.5) / transform['zx']) - (transform['tx'] / image_shape[0])
+        self.y = 0.5 + ((self.annotation_y - (transform['tx'] / image_shape[0]) - 0.5) / transform['zx'])
         self.h = (self.annotation_h / transform['zx'])
         if transform['flip_horizontal'] == 1:
             self.x = 1.0 - self.x
