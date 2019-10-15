@@ -103,11 +103,11 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                   )
 
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                    pyramid_size_list=sizes, disable_augmentation=False,
+                                    pyramid_size_list=sizes, disable_augmentation=True,
                                     movement_range_width=0.2, movement_range_height=0.2,
                                     zoom_range=(0.8, 1.2), flip=True, brightness_range=None)
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
-                                   pyramid_size_list=sizes)
+                                   pyramid_size_list=sizes, disable_augmentation=True)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                   use_multiprocessing=False)
