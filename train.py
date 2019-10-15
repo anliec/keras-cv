@@ -104,8 +104,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
-                                    movement_range_width=0.0, movement_range_height=0.0,
-                                    zoom_range=(1.0, 1.0), flip=False, brightness_range=None)
+                                    movement_range_width=0.2, movement_range_height=0.2,
+                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=None)
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
 
