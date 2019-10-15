@@ -3,6 +3,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Input, MaxPool2D, Conv2D, UpSampling2D, \
     Concatenate, Maximum, Add, Activation, Lambda, BatchNormalization, Softmax, Reshape
 from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.activations import softmax
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 import tensorflow as tf
@@ -101,15 +102,16 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
 
     input_layer = Input(shape=(height, width, 3))
-    x = Conv2D(filters=16, kernel_size=5, strides=2, activation="relu", padding='same')(input_layer)
+    x = input_layer
+    x = Conv2D(filters=16, kernel_size=5, strides=2, activation="relu", padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=16, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = Conv2D(filters=16, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=32, kernel_size=3, strides=2, activation='relu', padding='same')(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=2, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
 
     out = Conv2D(filters=class_count + 1,
@@ -117,7 +119,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
                  strides=1,
                  padding='same',
                  activation='linear',
-                 use_bias=True)(x)
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
@@ -127,16 +130,17 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
                  strides=1,
                  padding='same',
                  activation='linear',
-                 use_bias=True)(x)
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
 
-    x = Conv2D(filters=64, kernel_size=3, strides=2, activation='relu', padding='same')(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=2, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same')(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
 
     out = Conv2D(filters=class_count + 1,
@@ -144,7 +148,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
                  strides=1,
                  padding='same',
                  activation='linear',
-                 use_bias=True)(x)
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
@@ -153,7 +158,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
                  strides=1,
                  padding='same',
                  activation='linear',
-                 use_bias=True)(x)
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
@@ -162,7 +168,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
                  strides=1,
                  padding='same',
                  activation='linear',
-                 use_bias=True)(x)
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
