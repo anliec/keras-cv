@@ -45,7 +45,9 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, shapes: list, images
         pred_roi = detection_processor.process_detection(prediction, pool=None)
 
         detection += [{"frame_number": os.path.basename(image_path),
-                       "signs": [{"coordinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
+                       "signs": [{"coordinates": [int(roi.X), int(roi.Y), roi.W, roi.H],
+                                  "class": roi.c,
+                                  "detection_confidence": roi.confidence} for roi in rois]}
                       for rois, image_path in zip(pred_roi, test_sequence.images_list)]
 
     detection = sorted(detection, key=lambda e: e["frame_number"])
