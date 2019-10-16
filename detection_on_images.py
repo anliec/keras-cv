@@ -66,7 +66,7 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, shapes: list, images
 
     if output_file_path is not None:
         with open(output_file_path, 'w') as f:
-            json.dump(output, f)
+            json.dump(output, f, indent=4)
 
     return output
 
