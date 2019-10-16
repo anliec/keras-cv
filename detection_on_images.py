@@ -39,7 +39,7 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, shapes: list, images
     detection = []
     step_size = 100
     for i in range(0, len(test_sequence), step_size):
-        print("Batch {} / {}".format(int(i / step_size), math.ceil(len(test_sequence) / step_size)), end="\r")
+        print("Batch {} / {}:".format(int(i / step_size), math.ceil(len(test_sequence) / step_size)))
         prediction = model.predict_generator(test_sequence, steps=min(step_size, len(test_sequence) - i), verbose=1)
 
         pred_roi = detection_processor.process_detection(prediction, pool=None)
@@ -47,7 +47,7 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, shapes: list, images
         detection += [{"frame_number": os.path.basename(image_path),
                        "signs": [{"coordinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
                       for rois, image_path in zip(pred_roi, test_sequence.images_list)]
-    print()
+
     detection = sorted(detection, key=lambda e: e["frame_number"])
 
     output = {
