@@ -7,7 +7,7 @@ import tensorflow as tf
 import json
 import math
 
-from detection_processing import process_detection_raw
+from detection_processing import DetectionProcessor
 from load_network import load_network
 from load_yolo_data import read_yolo_image
 
@@ -28,22 +28,26 @@ class ImageSequence(tf.keras.utils.Sequence):
                         dtype=np.float16)
 
 
-def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, output_file_path: str = None,
-                        image_extension: str = ".jpg", batch_size: int = 32, threshold: float = 0.5):
+def run_model_on_images(model: tf.keras.Model, sizes: list, shapes: list, images_path: str,
+                        output_file_path: str = None, image_extension: str = ".jpg", batch_size: int = 32,
+                        threshold: float = 0.5, nms_threshold: float = 0.5):
     test_sequence = ImageSequence(model.input_shape[1:3], images_path, batch_size, image_extension)
+
+    detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=model.input_shape[1:3],
+                                             threshold=threshold, nms_threshold=nms_threshold)
 
     detection = []
     step_size = 100
     for i in range(0, len(test_sequence), step_size):
-        print("Batch {} / {}".format(int(i / step_size), math.ceil(len(test_sequence) / step_size)))
+        print("Batch {} / {}".format(int(i / step_size), math.ceil(len(test_sequence) / step_size)), end="\r")
         prediction = model.predict_generator(test_sequence, steps=min(step_size, len(test_sequence) - i), verbose=1)
 
-        pred_roi = process_detection_raw(prediction, sizes, threshold)
+        pred_roi = detection_processor.process_detection(prediction, pool=None)
 
         detection += [{"frame_number": os.path.basename(image_path),
                        "signs": [{"coordinates": [roi.X, roi.Y, roi.W, roi.H], "class": "Unique"} for roi in rois]}
                       for rois, image_path in zip(pred_roi, test_sequence.images_list)]
-
+    print()
     detection = sorted(detection, key=lambda e: e["frame_number"])
 
     output = {
@@ -53,7 +57,7 @@ def run_model_on_images(model: tf.keras.Model, sizes: list, images_path: str, ou
             },
             "framework": {
                 "name": "Nnet",
-                "version": "Alpha 0",
+                "version": "Alpha 1",
                 "test_date": datetime.datetime.now().strftime("%A %d. %B %Y"),
             },
             "frames": detection
@@ -73,14 +77,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('data_path',
                         type=str,
-                        help='Path to the input training data')
+                        help='Path to the input testing data')
     parser.add_argument('model_path',
                         type=str,
                         help='Path to the md5 model')
-    parser.add_argument('model_sizes',
-                        type=float,
-                        nargs='+',
-                        help='size of the different layers of the model')
     parser.add_argument('output_file_path',
                         type=str,
                         help='Path to the input training data')
@@ -103,12 +103,12 @@ if __name__ == '__main__':
                         dest="threshold")
     args = parser.parse_args()
 
-    model, sizes = load_network(size_value=[226, 402], random_init=True, pyramid_depth=4,
-                                first_pyramid_output=0, add_noise=False)
+    model, sizes, shapes = load_network(size_value=[226, 402], random_init=True, pyramid_depth=4,
+                                        first_pyramid_output=0, add_noise=False)
 
     model.load_weights(args.model_path)
 
-    run_model_on_images(model, sizes, args.data_path, args.output_file_path,
+    run_model_on_images(model, sizes, shapes, args.data_path, args.output_file_path,
                         image_extension=args.image_extension, threshold=args.threshold, batch_size=args.batch)
 
 
