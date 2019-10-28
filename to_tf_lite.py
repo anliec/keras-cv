@@ -6,29 +6,31 @@ import random
 
 
 def keras_to_tf_lite(keras_model_path: str, out_path: str, data_path: str, data_limit: int = None) -> None:
-
     model, sizes, shapes = load_network(size_value=[226, 402], random_init=True, pyramid_depth=4,
                                         first_pyramid_output=0, add_noise=False)
 
-    # input_shape = model.input.shape[1:3]
-    # input_shape = int(input_shape[0]), int(input_shape[1])
     model.load_weights(keras_model_path)
-
-    # images_list = list_data_from_dir(data_path, "*.jpg")
-    # if data_limit is not None:
-    #     random.shuffle(images_list)
-    #     images_list = images_list[:data_limit]
 
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
-    # def representative_dataset_gen():
-    #     for image_path in images_list:
-    #         im = read_yolo_image(image_path, input_shape)
-    #         im = im.reshape((1,) + im.shape)
-    #         yield [im]
-    #
-    # converter.representative_dataset = representative_dataset_gen
+    # quantification data provided run full quantification
+    if data_path is not None:
+        input_shape = model.input.shape[1:3]
+        input_shape = int(input_shape[0]), int(input_shape[1])
+        images_list = list_data_from_dir(data_path, "*.jpg")
+        if data_limit is not None:
+            random.shuffle(images_list)
+            images_list = images_list[:data_limit]
+
+        def representative_dataset_gen():
+            for image_path in images_list:
+                im = read_yolo_image(image_path, input_shape)
+                im = im.reshape((1,) + im.shape)
+                yield [im]
+
+        converter.representative_dataset = representative_dataset_gen
+
     tflite_model = converter.convert()
     open(out_path, "wb").write(tflite_model)
 
@@ -46,7 +48,8 @@ if __name__ == '__main__':
                         type=str,
                         dest="output")
     parser.add_argument('-d', '--quantification-data',
-                        required=True,
+                        required=False,
+                        default=None,
                         type=str,
                         dest="quantification_data")
     parser.add_argument('-l', '--data-limit',
