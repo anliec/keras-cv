@@ -101,17 +101,20 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     prediction_shapes = []
     sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
 
+    def relu6(t):
+        return tf.keras.activations.relu(t, max_value=6.0, threshold=0.0)
+
     input_layer = Input(shape=(height, width, 3))
     x = input_layer
-    x = Conv2D(filters=16, kernel_size=5, strides=2, activation="relu", padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=16, kernel_size=5, strides=2, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=16, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=16, kernel_size=3, strides=1, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=32, kernel_size=3, strides=2, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=2, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=1, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=32, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=32, kernel_size=3, strides=1, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
 
     out = Conv2D(filters=class_count + 1,
@@ -136,11 +139,11 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
 
-    x = Conv2D(filters=64, kernel_size=3, strides=2, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=2, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=1, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
-    x = Conv2D(filters=64, kernel_size=3, strides=1, activation='relu', padding='same', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=64, kernel_size=3, strides=1, activation=relu6, padding='same', kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization()(x)
 
     out = Conv2D(filters=class_count + 1,
