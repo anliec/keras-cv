@@ -53,13 +53,16 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     dropout_rate = 0.5
     alpha = 1.0
 
+    first_layer_filter = 5
+
     # def relu6(t):
     #     return tf.keras.activations.relu(t, max_value=6.0, threshold=0.0)
 
     input_layer = Input(shape=(height, width, 3))
-    x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, 3),
+    x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_filter),
                                       name='Conv1_pad')(input_layer)
-    x = Conv2D(filters=32, kernel_size=5, strides=2, activation=None, padding='valid', kernel_regularizer=l2(0.01))(x)
+    x = Conv2D(filters=32, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
+               kernel_regularizer=l2(0.01))(x)
     x = BatchNormalization(epsilon=1e-3, momentum=0.999)(x)
     x = tf.keras.layers.ReLU(6., name="Conv1_relu")(x)
     x = Dropout(dropout_rate)(x)
