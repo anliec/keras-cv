@@ -53,7 +53,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     dropout_rate = 0.5
     alpha = 1.0
 
-    first_layer_filter = 5
+    first_layer_filter = 3
 
     # def relu6(t):
     #     return tf.keras.activations.relu(t, max_value=6.0, threshold=0.0)
@@ -62,7 +62,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_filter),
                                       name='Conv1_pad')(input_layer)
     x = Conv2D(filters=32, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
-               kernel_regularizer=l2(0.01))(x)
+               kernel_regularizer=l2(0.01), use_bias=False, name="Conv1")(x)
     x = BatchNormalization(epsilon=1e-3, momentum=0.999)(x)
     x = tf.keras.layers.ReLU(6., name="Conv1_relu")(x)
     x = Dropout(dropout_rate)(x)
@@ -72,34 +72,36 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     x = Dropout(dropout_rate)(x)
     x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1, expansion=6, block_id=2)
     x = Dropout(dropout_rate)(x)
-
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
-    out = Softmax(axis=3)(out)
-    squares.append(out)
-    prediction_shapes.append(np.array(out.shape[1:3]))
-
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
-    out = Softmax(axis=3)(out)
-    squares.append(out)
-    prediction_shapes.append(np.array(out.shape[1:3]))
-
-    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2, expansion=6, block_id=3)
+    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1, expansion=6, block_id=3)
     x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=4)
+
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
+
+    out = Conv2D(filters=class_count + 1,
+                 kernel_size=3,
+                 strides=1,
+                 padding='same',
+                 activation='linear',
+                 use_bias=True,
+                 kernel_regularizer=l2(0.01))(x)
+    out = Softmax(axis=3)(out)
+    squares.append(out)
+    prediction_shapes.append(np.array(out.shape[1:3]))
+
+    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2, expansion=6, block_id=4)
     x = Dropout(dropout_rate)(x)
     x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=5)
+    x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=6)
     x = Dropout(dropout_rate)(x)
 
     out = Conv2D(filters=class_count + 1,

@@ -40,7 +40,23 @@ def plot_history(history, base_name=""):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
+    axes = plt.gca()
+    axes.set_xlim([0, None])
     plt.savefig(base_name + "loss.png")
+    plt.clf()
+
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    axes = plt.gca()
+    min_loss = min(min(history.history['loss']), min(history.history['val_loss']))
+    loss_lim = min_loss * 2
+    axes.set_ylim([min_loss, loss_lim])
+    axes.set_xlim([0, None])
+    plt.savefig(base_name + "loss_zoomed.png")
     plt.clf()
 
 
@@ -175,7 +191,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model.save_weights("model_weights.h5", overwrite=True)
 
     # Save a visualisation of the first layer
-    first_conv_weights = model.layers[1].get_weights()[0]
+    first_conv_weights = model.layers[2].get_weights()[0]
     for i in range(first_conv_weights.shape[3]):
         f = first_conv_weights[:, :, :, i]
         for l in range(3):
