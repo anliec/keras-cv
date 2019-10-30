@@ -50,7 +50,7 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     squares = []
     prediction_shapes = []
     sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
-    dropout_rate = 0.5
+    dropout_rate = 0.1
     alpha = 1.0
 
     first_layer_filter = 3
