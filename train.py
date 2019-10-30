@@ -42,6 +42,7 @@ def plot_history(history, base_name=""):
     plt.legend(['Train', 'Validation'], loc='upper left')
     axes = plt.gca()
     axes.set_xlim([0, None])
+    axes.set_ylim([0, None])
     plt.savefig(base_name + "loss.png")
     plt.clf()
 
@@ -54,7 +55,7 @@ def plot_history(history, base_name=""):
     axes = plt.gca()
     min_loss = min(min(history.history['loss']), min(history.history['val_loss']))
     loss_lim = min_loss * 2
-    axes.set_ylim([min_loss, loss_lim])
+    axes.set_ylim([0, loss_lim])
     axes.set_xlim([0, None])
     plt.savefig(base_name + "loss_zoomed.png")
     plt.clf()
