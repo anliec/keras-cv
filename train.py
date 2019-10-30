@@ -195,8 +195,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     for i in range(first_conv_weights.shape[3]):
         f = first_conv_weights[:, :, :, i]
         for l in range(3):
-            f[:, :, l] += f[:, :, l].min()
-            f[:, :, l] /= f[:, :, l].max() * 255
+            f[:, :, l] -= f[:, :, l].min()
+            f[:, :, l] *= 255 / f[:, :, l].max()
         f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
         cv2.imwrite("Conv1_filter{}.png".format(i), f)
 
