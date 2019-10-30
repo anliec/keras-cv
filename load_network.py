@@ -62,7 +62,8 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_filter),
                                       name='Conv1_pad')(input_layer)
     x = Conv2D(filters=32, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
-               kernel_regularizer=l2(0.01), use_bias=False, name="Conv1")(x)
+               # kernel_regularizer=l2(0.01),
+               use_bias=False, name="Conv1")(x)
     x = BatchNormalization(epsilon=1e-3, momentum=0.999)(x)
     x = tf.keras.layers.ReLU(6., name="Conv1_relu")(x)
     x = Dropout(dropout_rate)(x)
