@@ -134,7 +134,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     plot_history(history, "nNet")
 
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
-                                             nms_threshold=0.5)
+                                             nms_threshold=0.3)
     out_dir = "debug/"
     if os.path.isdir(out_dir):
         shutil.rmtree(out_dir, ignore_errors=True)

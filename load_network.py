@@ -39,8 +39,8 @@ class_count = 1  # excluding background (doesn't properly update hand crafted we
 # scale_initial_value = 1.0
 
 
-def load_network(size_value, random_init: bool = False, first_pyramid_output: int = 2, pyramid_depth: int = 7,
-                 add_noise: bool = False):
+def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = "all",
+                 layers_filters: tuple = (16, 16, 24, 32), expansions: tuple = (1, 6, 6)):
     height, width = size_value
 
     ####################################
@@ -50,10 +50,13 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     squares = []
     prediction_shapes = []
     sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
-    dropout_rate = 0.1
+    # dropout_rate = 0.1
     alpha = 1.0
 
     first_layer_filter = 3
+
+    f1, f2, f3, f4 = layers_filters
+    e1, e2, e3 = expansions
 
     # def relu6(t):
     #     return tf.keras.activations.relu(t, max_value=6.0, threshold=0.0)
@@ -61,77 +64,58 @@ def load_network(size_value, random_init: bool = False, first_pyramid_output: in
     input_layer = Input(shape=(height, width, 3))
     x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_filter),
                                       name='Conv1_pad')(input_layer)
-    x = Conv2D(filters=32, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
-               # kernel_regularizer=l2(0.01),
+    x = Conv2D(filters=f1, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
+               kernel_regularizer=l2(0.01),
                use_bias=False, name="Conv1")(x)
     x = BatchNormalization(epsilon=1e-3, momentum=0.999)(x)
     x = tf.keras.layers.ReLU(6., name="Conv1_relu")(x)
-    x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=16, alpha=alpha, stride=1, expansion=1, block_id=0)
-    x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=2, expansion=6, block_id=1)
-    x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1, expansion=6, block_id=2)
-    x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1, expansion=6, block_id=3)
+    if dropout_strategy == "all":
+        x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=f2, alpha=alpha, stride=1, expansion=e1, block_id=0)
+    if dropout_strategy == "all":
+        x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=2, expansion=e2, block_id=1)
+    if dropout_strategy == "all":
+        x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=2)
+    if dropout_strategy == "all":
+        x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=3)
     x = Dropout(dropout_rate)(x)
 
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
+    out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
+                              force_output_filter_count=True)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
 
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
+    out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=11,
+                              force_output_filter_count=True)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
 
-    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2, expansion=6, block_id=4)
-    x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=5)
-    x = Dropout(dropout_rate)(x)
-    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=6)
+    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=2, expansion=e3, block_id=4)
+    if dropout_strategy == "all":
+        x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=1, expansion=e3, block_id=5)
+    if dropout_strategy == "all":
+        x = Dropout(dropout_rate)(x)
+    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=1, expansion=e3, block_id=6)
     x = Dropout(dropout_rate)(x)
 
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
+    out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=12,
+                              force_output_filter_count=True)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
+    out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=13,
+                              force_output_filter_count=True)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
-    out = Conv2D(filters=class_count + 1,
-                 kernel_size=3,
-                 strides=1,
-                 padding='same',
-                 activation='linear',
-                 use_bias=True,
-                 kernel_regularizer=l2(0.01))(x)
+    out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=14,
+                              force_output_filter_count=True)
     out = Softmax(axis=3)(out)
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
@@ -191,12 +175,15 @@ def correct_pad(backend, inputs, kernel_size):
             (correct[1] - adjust[1], correct[1]))
 
 
-def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
+def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False):
     channel_axis = 1 if tf.keras.backend.image_data_format() == 'channels_first' else -1
 
     in_channels = tf.keras.backend.int_shape(inputs)[channel_axis]
     pointwise_conv_filters = int(filters * alpha)
-    pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
+    if not force_output_filter_count:
+        pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
+    else:
+        pointwise_filters = pointwise_conv_filters
     x = inputs
     prefix = 'block_{}_'.format(block_id)
 
