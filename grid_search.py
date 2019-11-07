@@ -154,7 +154,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1):
 
         plot_history(history, os.path.join(cur_dir, "nNet"))
 
-        np.savez(os.path.join(cur_dir, "history.npz"), history.history.values())
+        arrays = {k: np.array(v) for k, v in history.history.items()}
+        np.savez(os.path.join(cur_dir, "history.npz"), arrays)
         model.save(os.path.join(cur_dir, "model.h5"))
 
         # Save a visualisation of the first layer
