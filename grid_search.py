@@ -103,8 +103,18 @@ def plot_history(history, base_name=""):
     plt.clf()
 
 
-def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1):
+def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_path: str = None,
+                base_model_config_path: str = None):
     model, sizes, shapes = load_network(size_value=[110, 200])
+
+    # load base model
+    if base_model_config_path is not None and base_model_path is not None:
+        with open(base_model_config_path, 'r') as f:
+            kwargs = json.load(f)
+        base_model, _, _ = load_network(size_value=[110, 200], **kwargs)
+        base_model.load_weights(base_model_path)
+    else:
+        base_model = None
 
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
@@ -142,6 +152,27 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1):
             json.dump(kwargs, f, indent=4)
 
         model, sizes, shapes = load_network(size_value=[110, 200], **kwargs)
+
+        # preload base model weights
+        if base_model is not None:
+            for lb, l in zip(base_model.layers, model.layers):
+                new_weights = []
+                for wb, w in zip(lb.get_weights(), l.get_weights()):
+                    if len(w.shape) == 1:
+                        nw = wb[:w.shape[0]]
+                    elif len(w.shape) == 2:
+                        nw = wb[:w.shape[0]][:w.shape[1]]
+                    elif len(w.shape) == 3:
+                        nw = wb[:w.shape[0]][:w.shape[1]][:w.shape[2]]
+                    elif len(w.shape) == 4:
+                        nw = wb[:w.shape[0]][:w.shape[1]][:w.shape[2]][:w.shape[3]]
+                    elif len(w.shape) == 5:
+                        nw = wb[:w.shape[0]][:w.shape[1]][:w.shape[2]][:w.shape[3]][:w.shape[4]]
+                    else:
+                        print("Unexpected weights shape: {}".format(w.shape))
+                        nw = w
+                    new_weights.append(nw)
+                l.set_weights(new_weights)
 
         model.compile(optimizer='sgd',
                       loss=loss.compute_loss
