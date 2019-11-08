@@ -94,8 +94,8 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
 
 def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
     # [451, 579]
-    model, sizes, shapes = load_network(size_value=[221, 401], random_init=random_init, pyramid_depth=5,
-                                        first_pyramid_output=1, add_noise=True)
+    model, sizes, shapes = load_network(size_value=[110, 200], dropout_rate=0.1, dropout_strategy="all",
+                                        layers_filters=(32, 16, 24, 32), expansions=(6, 6, 6))
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
