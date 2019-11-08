@@ -119,9 +119,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1):
     images_list_train = images_list[:split]
     images_list_test = images_list[split:] + test_images_list
 
-    images_list_train = images_list_train[128:]
-    images_list_test = images_list_test[100:]
-
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
     pool = multiprocessing.Pool()
