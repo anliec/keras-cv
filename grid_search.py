@@ -23,11 +23,12 @@ matplotlib.use('Agg')
 
 
 TO_EXPLORE = {
-    "dropout_rate": [0.1, 0.5, 0.8],
-    "dropout_strategy": ["all", "last"],
+    "dropout_rate": [0.1],
+    "dropout_strategy": ["all"],
     "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
-                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8)],
-    "expansions": [(1, 6, 6), (1, 1, 1), (1, 3, 3)]
+                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
+                       (8, 16, 16, 24), (8, 16, 16, 16)],
+    "expansions": [(1, 6, 6), (1, 3, 3), (1, 1, 1)]
 }
 
 
@@ -105,13 +106,14 @@ def plot_history(history, base_name=""):
 
 def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_path: str = None,
                 base_model_config_path: str = None):
-    model, sizes, shapes = load_network(size_value=[110, 200])
+    input_size = [220, 400]
+    model, sizes, shapes = load_network(size_value=input_size)
 
     # load base model
     if base_model_config_path is not None and base_model_path is not None:
         with open(base_model_config_path, 'r') as f:
             kwargs = json.load(f)
-        base_model, _, _ = load_network(size_value=[110, 200], **kwargs)
+        base_model, _, _ = load_network(size_value=input_size, **kwargs)
         base_model.load_weights(base_model_path)
     else:
         base_model = None
@@ -151,7 +153,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         with open(os.path.join(cur_dir, "config.json"), 'w') as f:
             json.dump(kwargs, f, indent=4)
 
-        model, sizes, shapes = load_network(size_value=[110, 200], **kwargs)
+        model, sizes, shapes = load_network(size_value=input_size, **kwargs)
 
         # preload base model weights
         if base_model is not None:
