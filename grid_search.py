@@ -22,12 +22,19 @@ import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 
 
+# TO_EXPLORE = {
+#     "dropout_rate": [0.1],
+#     "dropout_strategy": ["all"],
+#     "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
+#                        (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
+#                        (8, 16, 16, 24), (8, 16, 16, 16)],
+#     "expansions": [(1, 6, 6), (1, 3, 3), (1, 1, 1)]
+# }
+
 TO_EXPLORE = {
-    "dropout_rate": [0.1],
-    "dropout_strategy": ["all"],
-    "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
-                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
-                       (8, 16, 16, 24), (8, 16, 16, 16)],
+    "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+    "dropout_strategy": ["all", "last"],
+    "layers_filters": [(32, 16, 24, 32)],
     "expansions": [(1, 6, 6), (1, 3, 3), (1, 1, 1)]
 }
 
@@ -40,7 +47,7 @@ def generate_combinations():
     cur_pos = {k: 0 for k in TO_EXPLORE.keys()}
     while True:
         kwargs = {k: TO_EXPLORE[k][pos] for k, pos in cur_pos.items()}
-        if kwargs["dropout_strategy"] != "all" or kwargs["dropout_rate"] <= 0.2:
+        if kwargs["dropout_strategy"] != "all" or kwargs["dropout_rate"] <= 0.3:
             yield kwargs
         for k, v in cur_pos.items():
             if v + 1 < len(TO_EXPLORE[k]):
