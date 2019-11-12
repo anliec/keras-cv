@@ -178,6 +178,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                 new_weights = []
                 lb = base_model.get_layer(name=l.name)
                 for wb, w in zip(lb.get_weights(), l.get_weights()):
+                    print("resizing {} to {}".format(wb.shape, w.shape))
                     if len(w.shape) == 1:
                         nw = wb[:w.shape[0]]
                     elif len(w.shape) == 2:
@@ -191,6 +192,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                     else:
                         print("Unexpected weights shape: {}".format(w.shape))
                         nw = w
+                    print(nw.shape)
+                    assert (np.array(nw.shape) == np.array(w.shape)).all()
                     new_weights.append(nw)
                 l.set_weights(new_weights)
 

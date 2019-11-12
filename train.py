@@ -144,7 +144,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     # full_sequence = YoloDataLoader(images_list_test + images_list_train, batch_size, input_shape, shapes,
     #                                pyramid_size_list=sizes, disable_augmentation=True)
 
-    map_callback = MAP_eval(train_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
+    map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                             iou_threshold=0.5, frequency=25, epoch_start=epoch//2)
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
 
