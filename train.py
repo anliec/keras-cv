@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import os
 import shutil
+import json
 import random
 import multiprocessing
 from time import time
@@ -98,11 +99,17 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
     # config.log_device_placement = True  # to log device placement (on which device the operation ran)
     sess = tf.compat.v1.Session(config=config)
-    tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
+    tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for KerasOn va
+
+    config = {"dropout_rate": 0.1, "dropout_strategy": "all",
+              "layers_filters": (32, 16, 24, 32), "expansions": (1, 6, 6)}
+
+    # save config
+    with open("config.json", 'w') as c:
+        json.dump(config, c)
 
     # [451, 579]
-    model, sizes, shapes = load_network(size_value=[220, 400], dropout_rate=0.1, dropout_strategy="all",
-                                        layers_filters=(32, 16, 24, 32), expansions=(1, 6, 6))
+    model, sizes, shapes = load_network(size_value=[110, 200], **config)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
@@ -130,16 +137,16 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.2, movement_range_height=0.2,
-                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.5, 1.5),
+                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
-    full_sequence = YoloDataLoader(images_list_test + images_list_train, batch_size, input_shape, shapes,
-                                   pyramid_size_list=sizes, disable_augmentation=True)
+    # full_sequence = YoloDataLoader(images_list_test + images_list_train, batch_size, input_shape, shapes,
+    #                                pyramid_size_list=sizes, disable_augmentation=True)
 
     map_callback = MAP_eval(train_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_threshold=0.5, frequency=10, epoch_start=50)
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+                            iou_threshold=0.5, frequency=25, epoch_start=epoch//2)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                   use_multiprocessing=False, callbacks=[map_callback, early_stopping])
@@ -157,7 +164,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     gt_count = 0
     fps = 1
     fps_nn = 1
-    for i, (x_im, y_raw) in enumerate(full_sequence.data_list_iterator()):
+    for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
         seconds_left = (len(test_sequence.image_list) - i) / fps
         print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
               "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),

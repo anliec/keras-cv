@@ -76,7 +76,7 @@ class MAP_eval(tf.keras.callbacks.Callback):
         return area_under_curve, last_tp, last_fp, len(fn_roi)
 
     def on_epoch_end(self, epoch, logs={}):
-        if epoch > self.epoch_start and epoch % self.frequency == 0:
+        if epoch > self.epoch_start and epoch % self.frequency == self.frequency - 1:
             mean_ap, tp, fp, fn = self.eval_map()
             print(" mAP: {}  TP: {}  FP: {}  FN: {}".format(mean_ap, tp, fp, fn))
             self.maps.append(mean_ap)

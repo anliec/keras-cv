@@ -174,8 +174,9 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 
         # preload base model weights
         if base_model is not None:
-            for lb, l in zip(base_model.layers, model.layers):
+            for l in model.layers:
                 new_weights = []
+                lb = base_model.get_layer(name=l.name)
                 for wb, w in zip(lb.get_weights(), l.get_weights()):
                     if len(w.shape) == 1:
                         nw = wb[:w.shape[0]]
@@ -289,9 +290,22 @@ if __name__ == '__main__':
                         default=1,
                         help='Number of epoch during training',
                         dest="epoch")
+    parser.add_argument('-m', '--base-model',
+                        required=False,
+                        type=str,
+                        default=None,
+                        help='Base pre-trained model to load weights from for weights sharing',
+                        dest="model")
+    parser.add_argument('-c', '--base-model-config',
+                        required=False,
+                        type=str,
+                        default=None,
+                        help='Base pre-trained model config',
+                        dest="model_config")
     args = parser.parse_args()
 
-    grid_search(args.data_path, args.batch, args.epoch)
+    grid_search(args.data_path, args.batch, args.epoch, base_model_path=args.model,
+                base_model_config_path=args.model_config)
 
 
 

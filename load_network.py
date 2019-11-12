@@ -50,7 +50,7 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     squares = []
     prediction_shapes = []
     sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
-    # dropout_rate = 0.1
+    sizes = [int(s / 220 * height) for s in sizes]  # for smaller input size (than 220, 400)
     alpha = 1.0
 
     first_layer_filter = 3
@@ -58,16 +58,13 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     f1, f2, f3, f4 = layers_filters
     e1, e2, e3 = expansions
 
-    # def relu6(t):
-    #     return tf.keras.activations.relu(t, max_value=6.0, threshold=0.0)
-
-    input_layer = Input(shape=(height, width, 3))
+    input_layer = Input(shape=(height, width, 3), name='input')
     x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_filter),
                                       name='Conv1_pad')(input_layer)
     x = Conv2D(filters=f1, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
                kernel_regularizer=l2(0.01),
                use_bias=False, name="Conv1")(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999)(x)
+    x = BatchNormalization(epsilon=1e-3, momentum=0.99)(x)
     x = tf.keras.layers.ReLU(6., name="Conv1_relu")(x)
     if dropout_strategy == "all":
         x = Dropout(dropout_rate)(x)
@@ -210,16 +207,25 @@ def correct_pad(backend, inputs, kernel_size):
             (correct[1] - adjust[1], correct[1]))
 
 
-def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False):
+def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False,
+                        use_resnet: bool = False):
+    prefix = 'block_{}_'.format(block_id)
     x = Conv2D(filters=filters,
                kernel_size=3,
                strides=stride,
                padding='same',
                use_bias=False,
                activation=None,
-               name='block_{}_conv'.format(block_id),
+               name='{}conv'.format(prefix),
                kernel_regularizer=l2(0.01))(inputs)
-    return tf.keras.layers.ReLU(6., name='block_{}_relu'.format(block_id))(x)
+    x = tf.keras.layers.BatchNormalization(axis=-1,
+                                           epsilon=1e-3,
+                                           momentum=0.99,
+                                           name=prefix + 'BN')(x)
+    x = tf.keras.layers.ReLU(6., name='{}relu'.format(prefix))(x)
+    if use_resnet and tf.keras.backend.int_shape(inputs)[-1] == filters and stride == 1:
+        x = tf.keras.layers.Add(name=prefix + 'add')([inputs, x])
+    return x
 
 
 # def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False):
@@ -281,4 +287,4 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, for
 #
 #     if in_channels == pointwise_filters and stride == 1:
 #         return tf.keras.layers.Add(name=prefix + 'add')([inputs, x])
-    return x
+#     return x
