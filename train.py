@@ -128,7 +128,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     pool = multiprocessing.Pool()
 
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                    pyramid_size_list=sizes, disable_augmentation=True,
+                                    pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.2, movement_range_height=0.2,
                                     zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.5, 1.5),
                                     use_multiprocessing=True, pool=pool)
@@ -138,11 +138,11 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                                    pyramid_size_list=sizes, disable_augmentation=True)
 
     map_callback = MAP_eval(train_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_threshold=0.5, frequency=10, epoch_start=epoch//2)
-    # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
+                            iou_threshold=0.5, frequency=10, epoch_start=50)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-                                  use_multiprocessing=False, callbacks=[map_callback])
+                                  use_multiprocessing=False, callbacks=[map_callback, early_stopping])
 
     plot_history(history, "nNet")
 
