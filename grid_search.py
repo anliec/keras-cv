@@ -8,6 +8,7 @@ import multiprocessing
 from time import time
 from load_yolo_data import list_data_from_dir, YoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
 from load_network import load_network
+from callback import MAP_eval
 from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
 from metrics import map_metric
@@ -22,21 +23,21 @@ import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 
 
-# TO_EXPLORE = {
-#     "dropout_rate": [0.1],
-#     "dropout_strategy": ["all"],
-#     "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
-#                        (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
-#                        (8, 16, 16, 24), (8, 16, 16, 16)],
-#     "expansions": [(1, 6, 6), (1, 3, 3), (1, 1, 1)]
-# }
-
 TO_EXPLORE = {
-    "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-    "dropout_strategy": ["all", "last"],
-    "layers_filters": [(32, 16, 24, 32)],
-    "expansions": [(1, 6, 6), (1, 3, 3), (1, 1, 1)]
+    "dropout_rate": [0.1],
+    "dropout_strategy": ["all"],
+    "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
+                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
+                       (8, 16, 16, 24), (8, 16, 16, 16)],
+    "expansions": [(1, 6, 6)]
 }
+
+# TO_EXPLORE = {
+#     "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+#     "dropout_strategy": ["all", "last"],
+#     "layers_filters": [(32, 16, 24, 32)],
+#     "expansions": [(1, 6, 6)]
+# }
 
 
 def generate_combinations():
@@ -113,6 +114,13 @@ def plot_history(history, base_name=""):
 
 def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_path: str = None,
                 base_model_config_path: str = None):
+    # setup tensorflow backend (prevent "Blas SGEMM launch failed" error)
+    config = tf.compat.v1.ConfigProto()
+    config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
+    # config.log_device_placement = True  # to log device placement (on which device the operation ran)
+    sess = tf.compat.v1.Session(config=config)
+    tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
+
     input_size = [220, 400]
     model, sizes, shapes = load_network(size_value=input_size)
 
@@ -149,6 +157,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                                     use_multiprocessing=True, pool=pool)
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
+
+    early_stopping = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.3)
@@ -187,8 +197,11 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                       loss=loss.compute_loss
                       )
 
+        map_callback = MAP_eval(train_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
+                                iou_threshold=0.5, frequency=10, epoch_start=1)
+
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-                                      use_multiprocessing=False)
+                                      use_multiprocessing=False, callbacks=[early_stopping, map_callback])
 
         plot_history(history, os.path.join(cur_dir, "nNet"))
 
@@ -240,11 +253,20 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             f_end = time()
             fps = 1 / (f_end - f_start)
 
+        if len(map_callback.maps) == 0:
+            map_callback.maps.append(None)
+            map_callback.epochs.append(None)
+            map_callback.scores.append(None)
+
         with open(os.path.join(cur_dir, "results.json"), 'w') as f:
             json.dump({"config": kwargs,
                        "nn_fps": fps_nn_list,
                        "prediction_count": prediction_count,
-                       "flops": get_flops(model)},
+                       "flops": get_flops(model),
+                       "last_mAP": map_callback.maps[-1],
+                       "mAPs": list(zip(map_callback.epochs, map_callback.maps)),
+                       "stats": list(zip(map_callback.epochs, map_callback.scores))
+                       },
                       f)
 
 

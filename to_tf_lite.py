@@ -6,8 +6,8 @@ import random
 
 
 def keras_to_tf_lite(keras_model_path: str, out_path: str, data_path: str, data_limit: int = None) -> None:
-    model, sizes, shapes = load_network(size_value=[226, 402], random_init=True, pyramid_depth=4,
-                                        first_pyramid_output=0, add_noise=False)
+    model, sizes, shapes = load_network(size_value=[220, 400], dropout_rate=0.0, dropout_strategy="all",
+                                        layers_filters=(32, 16, 24, 32), expansions=(1, 6, 6))
 
     model.load_weights(keras_model_path)
 
