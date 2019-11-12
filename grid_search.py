@@ -178,21 +178,21 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                 new_weights = []
                 lb = base_model.get_layer(name=l.name)
                 for wb, w in zip(lb.get_weights(), l.get_weights()):
-                    print("resizing {} to {}".format(wb.shape, w.shape))
-                    if len(w.shape) == 1:
+                    if (np.array(wb.shape) == np.array(w.shape)).all():
+                        nw = wb.copy()
+                    elif len(w.shape) == 1:
                         nw = wb[:w.shape[0]]
                     elif len(w.shape) == 2:
-                        nw = wb[:w.shape[0]][:w.shape[1]]
+                        nw = wb[:w.shape[0], :w.shape[1]]
                     elif len(w.shape) == 3:
-                        nw = wb[:w.shape[0]][:w.shape[1]][:w.shape[2]]
+                        nw = wb[:w.shape[0], :w.shape[1], :w.shape[2]]
                     elif len(w.shape) == 4:
-                        nw = wb[:w.shape[0]][:w.shape[1]][:w.shape[2]][:w.shape[3]]
+                        nw = wb[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3]]
                     elif len(w.shape) == 5:
-                        nw = wb[:w.shape[0]][:w.shape[1]][:w.shape[2]][:w.shape[3]][:w.shape[4]]
+                        nw = wb[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3], :w.shape[4]]
                     else:
                         print("Unexpected weights shape: {}".format(w.shape))
-                        nw = w
-                    print(nw.shape)
+                        nw = w.copy()
                     assert (np.array(nw.shape) == np.array(w.shape)).all()
                     new_weights.append(nw)
                 l.set_weights(new_weights)
@@ -201,7 +201,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                       loss=loss.compute_loss
                       )
 
-        map_callback = MAP_eval(train_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
+        map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                                 iou_threshold=0.5, frequency=10, epoch_start=1)
 
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
