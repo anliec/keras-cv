@@ -128,7 +128,9 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     if base_model_config_path is not None and base_model_path is not None:
         with open(base_model_config_path, 'r') as f:
             kwargs = json.load(f)
-        base_model, _, _ = load_network(size_value=input_size, **kwargs)
+        if "size_value" not in kwargs:
+            kwargs["size_value"] = input_size
+        base_model, _, _ = load_network(**kwargs)
         base_model.load_weights(base_model_path)
     else:
         base_model = None
@@ -164,9 +166,30 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                                              nms_threshold=0.3)
 
     for comb, kwargs in enumerate(generate_combinations()):
+        if "size_value" not in kwargs:
+            kwargs["size_value"] = input_size
+        
         cur_dir = os.path.join("grid_search", "test_{}".format(comb))
-        os.makedirs(cur_dir, exist_ok=False)
-
+        try:
+            os.makedirs(cur_dir, exist_ok=False)
+        except FileExistsError as e:
+            # check that the previous execution was done or not
+            if os.path.isfile(os.path.join(cur_dir, "config.json")):
+                with open(os.path.join(cur_dir, "config.json")) as j:
+                    other_config = json.load(j)
+                for k, v in kwargs.items():
+                    try:
+                        assert other_config[k] == v
+                    except Exception:
+                        raise e
+                if os.path.isfile(os.path.join(cur_dir, "model.h5")):
+                    print("results for {} already exist, skipping".format(cur_dir))
+                    continue
+                else:
+                    pass
+            else:
+                raise e
+            
         with open(os.path.join(cur_dir, "config.json"), 'w') as f:
             json.dump(kwargs, f, indent=4)
 

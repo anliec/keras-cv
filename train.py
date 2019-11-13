@@ -101,7 +101,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     sess = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for KerasOn va
 
-    config = {"dropout_rate": 0.1, "dropout_strategy": "all",
+    config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
               "layers_filters": (32, 16, 24, 32), "expansions": (1, 6, 6)}
 
     # save config
@@ -109,7 +109,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         json.dump(config, c)
 
     # [451, 579]
-    model, sizes, shapes = load_network(size_value=[110, 200], **config)
+    model, sizes, shapes = load_network(**config)
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
