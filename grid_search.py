@@ -195,7 +195,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         with open(os.path.join(cur_dir, "config.json"), 'w') as f:
             json.dump(kwargs, f, indent=4)
 
-        model, sizes, shapes = load_network(size_value=input_size, **kwargs)
+        model, sizes, shapes = load_network(**kwargs)
 
         # preload base model weights
         if base_model is not None:
