@@ -179,7 +179,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                     other_config = json.load(j)
                 for k, v in kwargs.items():
                     try:
-                        assert other_config[k] == v
+                        assert other_config[k] == v, "{} should be {}, not {} for config file to be the same" \
+                                                     "".format(k, v, other_config[k])
                     except Exception:
                         raise e
                 if os.path.isfile(os.path.join(cur_dir, "model.h5")):
