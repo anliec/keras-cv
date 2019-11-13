@@ -160,7 +160,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
 
-    early_stopping = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
+    # early_stopping = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.3)
@@ -230,7 +230,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                                 iou_threshold=0.5, frequency=10, epoch_start=1)
 
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-                                      use_multiprocessing=False, callbacks=[early_stopping, map_callback])
+                                      use_multiprocessing=False, callbacks=[map_callback])
 
         plot_history(history, os.path.join(cur_dir, "nNet"))
 
