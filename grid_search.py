@@ -178,6 +178,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                 with open(os.path.join(cur_dir, "config.json")) as j:
                     other_config = json.load(j)
                 for k, v in kwargs.items():
+                    if type(v) == tuple:
+                        v = list(v)
                     try:
                         assert other_config[k] == v, "{} should be {}, not {} for config file to be the same" \
                                                      "".format(k, v, other_config[k])
