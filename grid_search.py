@@ -166,9 +166,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                                              nms_threshold=0.3)
 
     for comb, kwargs in enumerate(generate_combinations()):
-        if "size_value" not in kwargs:
-            kwargs["size_value"] = input_size
-        
         cur_dir = os.path.join("grid_search", "test_{}".format(comb))
         try:
             os.makedirs(cur_dir, exist_ok=False)
@@ -192,7 +189,9 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                     pass
             else:
                 raise e
-            
+
+        if "size_value" not in kwargs:
+            kwargs["size_value"] = input_size
         with open(os.path.join(cur_dir, "config.json"), 'w') as f:
             json.dump(kwargs, f, indent=4)
 
