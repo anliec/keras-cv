@@ -121,7 +121,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     sess = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
-    input_size = [220, 400]
+    input_size = [110, 200]
     model, sizes, shapes = load_network(size_value=input_size)
 
     # load base model
