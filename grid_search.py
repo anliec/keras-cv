@@ -134,19 +134,21 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             kwargs["size_value"] = input_size
         base_model, _, _ = load_network(**kwargs)
         base_model.load_weights(base_model_path)
+    else:
+        base_model = None
+
+    if data_path[-5:] == ".json":
         # if model is provided data must be too
         with open(data_path, 'r') as j:
             data = json.load(j)
         images_list_train = data["train"]
-        images_list_test = data["test"]
+        images_list_test = data["val"]
     else:
-        base_model = None
         images_list = list_data_from_dir(data_path, "*.jpg")
         if os.path.isdir("data/test"):
             test_images_list = list_data_from_dir("data/test", "*.jpg")
         else:
             test_images_list = []
-
         split = int(round(len(images_list) * 0.9))
         images_list_train = images_list[:split]
         images_list_test = images_list[split:] + test_images_list
