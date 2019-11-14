@@ -100,7 +100,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
     # config.log_device_placement = True  # to log device placement (on which device the operation ran)
     sess = tf.compat.v1.Session(config=config)
-    tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for KerasOn va
+    tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
     config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
               "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6)}
@@ -121,7 +121,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         with open("data.json", 'r') as j:
             data = json.load(j)
         images_list_train = data["train"]
-        images_list_test = data["test"]
+        images_list_test = data["val"]
     else:
         images_list = list_data_from_dir(data_path, "*.jpg")
         if os.path.isdir("data/test"):
