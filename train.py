@@ -200,25 +200,25 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
         cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
         prediction_count += len(pred_roi[0])
         # process gt
-        pred_roi = detection_processor.process_detection(y_raw.reshape((1,) + y_raw.shape), pool=None)
+        # pred_roi = detection_processor.process_detection(y_raw.reshape((1,) + y_raw.shape), pool=None)
         # draw gt
-        bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
-        bb_im = draw_roi(bb_im, pred_roi[0])
-        bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
-        gt_count += len(pred_roi[0])
-        f_end = time()
-        fps = 1 / (f_end - f_start)
+        # bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
+        # bb_im = draw_roi(bb_im, pred_roi[0])
+        # bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
+        # cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
+        # gt_count += len(pred_roi[0])
+        # f_end = time()
+        # fps = 1 / (f_end - f_start)
 
     print()
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
-    print("Fastest: {:.4f} s\t{:.2f} fps".format(min(durations), 1/min(durations)))
-    print("Slowest: {:.4f} s\t{:.2f} fps".format(max(durations), 1/max(durations)))
+    print("Fastest: {:.4f}s  {:.2f} fps".format(min(durations), 1/min(durations)))
+    print("Slowest: {:.4f}s  {:.2f} fps".format(max(durations), 1/max(durations)))
 
     # print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
-    print("{} bounding box predicted over {} frames, for {} boxes in ground truth".format(prediction_count,
-                                                                                          len(durations),
-                                                                                          gt_count))
+    # print("{} bounding box predicted over {} frames, for {} boxes in ground truth".format(prediction_count,
+    #                                                                                       len(durations),
+    #                                                                                       gt_count))
 
     model.save("model.h5")
     # model.save("model_no_optimizer.h5", include_optimizer=False)

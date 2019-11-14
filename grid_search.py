@@ -23,21 +23,21 @@ import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 
 
-TO_EXPLORE = {
-    "dropout_rate": [0.1],
-    "dropout_strategy": ["all"],
-    "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
-                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
-                       (8, 16, 16, 24), (8, 16, 16, 16)],
-    "expansions": [(1, 6, 6)]
-}
-
 # TO_EXPLORE = {
-#     "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-#     "dropout_strategy": ["all", "last"],
-#     "layers_filters": [(32, 16, 24, 32)],
+#     "dropout_rate": [0.1],
+#     "dropout_strategy": ["all"],
+#     "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
+#                        (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
+#                        (8, 16, 16, 24), (8, 16, 16, 16)],
 #     "expansions": [(1, 6, 6)]
 # }
+
+TO_EXPLORE = {
+    "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+    "dropout_strategy": ["all", "last"],
+    "layers_filters": [(16, 16, 24, 24)],
+    "expansions": [(1, 6, 6)]
+}
 
 
 def generate_combinations():
