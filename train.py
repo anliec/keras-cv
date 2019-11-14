@@ -140,10 +140,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                                     movement_range_width=0.2, movement_range_height=0.2,
                                     zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
-    train_sequence.preload_data()
+    # train_sequence.preload_data()
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
-    test_sequence.preload_data()
+    # test_sequence.preload_data()
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                             iou_threshold=0.5, frequency=25, epoch_start=min(epoch//2, 50))
