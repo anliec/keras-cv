@@ -1,13 +1,23 @@
 import tensorflow as tf
+import json
+import os
 
 from load_network import load_network
 from load_yolo_data import list_data_from_dir, read_yolo_image
 import random
 
 
-def keras_to_tf_lite(keras_model_path: str, out_path: str, data_path: str, data_limit: int = None) -> None:
-    model, sizes, shapes = load_network(size_value=[220, 400], dropout_rate=0.0, dropout_strategy="all",
-                                        layers_filters=(32, 16, 24, 32), expansions=(1, 6, 6))
+def keras_to_tf_lite(keras_model_path: str, out_path: str, data_path: str, data_limit: int = None,
+                     config_file: str = None) -> None:
+    if config_file is None and os.path.isfile(os.path.join(os.path.dirname(keras_model_path), "config.json")):
+        config_file = os.path.join(os.path.dirname(keras_model_path), "config.json")
+    if config_file is not None:
+        with open(config_file, 'r') as c:
+            config = json.load(c)
+    else:
+        config = {}
+
+    model, sizes, shapes = load_network(**config)
 
     model.load_weights(keras_model_path)
 
@@ -43,6 +53,11 @@ if __name__ == '__main__':
                         required=True,
                         type=str,
                         dest="model")
+    parser.add_argument('-c', '--input-model-config',
+                        required=False,
+                        type=str,
+                        default=None,
+                        dest="config")
     parser.add_argument('-o', '--output-tf-lite-model',
                         required=True,
                         type=str,
@@ -59,5 +74,5 @@ if __name__ == '__main__':
                         dest="limit")
     args = parser.parse_args()
 
-    keras_to_tf_lite(args.model, args.output, args.quantification_data, args.limit)
+    keras_to_tf_lite(args.model, args.output, args.quantification_data, args.limit, args.config)
 

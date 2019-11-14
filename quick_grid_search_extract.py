@@ -14,7 +14,9 @@ def extract_from_grid_search(results_dir: str, label_to_extract):
             print("Unable to open file {}".format(r))
             continue
         name = os.path.basename(os.path.dirname(r))
-        print("{}:\t{}\t{}".format(name, stats[label_to_extract], stats['config']['layers_filters']))
+        maps = np.array(stats['mAPs'])
+        print("{}:\t{:.2f}\t{}\t{:.2f}"
+              "".format(name, stats["last_mAP"], stats['config']['layers_filters'], np.max(maps, axis=0)[1]))
 
 
 if __name__ == '__main__':

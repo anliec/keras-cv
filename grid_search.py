@@ -126,27 +126,33 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 
     # load base model
     if base_model_config_path is not None and base_model_path is not None:
+        assert data_path[-5:] == ".json", "If you provide a pretrain model please provide the path to the list of the "\
+                                          "data used for training as a json file (usually data.json)."
         with open(base_model_config_path, 'r') as f:
             kwargs = json.load(f)
         if "size_value" not in kwargs:
             kwargs["size_value"] = input_size
         base_model, _, _ = load_network(**kwargs)
         base_model.load_weights(base_model_path)
+        # if model is provided data must be too
+        with open(data_path, 'r') as j:
+            data = json.load(j)
+        images_list_train = data["train"]
+        images_list_test = data["test"]
     else:
         base_model = None
+        images_list = list_data_from_dir(data_path, "*.jpg")
+        if os.path.isdir("data/test"):
+            test_images_list = list_data_from_dir("data/test", "*.jpg")
+        else:
+            test_images_list = []
+
+        split = int(round(len(images_list) * 0.9))
+        images_list_train = images_list[:split]
+        images_list_test = images_list[split:] + test_images_list
 
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
-
-    images_list = list_data_from_dir(data_path, "*.jpg")
-    if os.path.isdir("data/test"):
-        test_images_list = list_data_from_dir("data/test", "*.jpg")
-    else:
-        test_images_list = []
-
-    split = int(round(len(images_list) * 0.9))
-    images_list_train = images_list[:split]
-    images_list_test = images_list[split:] + test_images_list
 
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
@@ -155,7 +161,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.2, movement_range_height=0.2,
-                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.5, 1.5),
+                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
@@ -166,7 +172,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                                              nms_threshold=0.3)
 
     for comb, kwargs in enumerate(generate_combinations()):
-        cur_dir = os.path.join("grid_search", "test_{}".format(comb))
+        cur_dir = os.path.join("grid_search", "test_{:03d}".format(comb))
         try:
             os.makedirs(cur_dir, exist_ok=False)
         except FileExistsError as e:
@@ -227,7 +233,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                       )
 
         map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                                iou_threshold=0.5, frequency=10, epoch_start=1)
+                                iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=1)
 
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                       use_multiprocessing=False, callbacks=[map_callback])

@@ -115,17 +115,26 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
 
-    generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
+    # generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
 
-    images_list = list_data_from_dir(data_path, "*.jpg")
-    if os.path.isdir("data/test"):
-        test_images_list = list_data_from_dir("data/test", "*.jpg")
+    if os.path.isfile("data.json"):
+        with open("data.json", 'r') as j:
+            data = json.load(j)
+        images_list_train = data["train"]
+        images_list_test = data["test"]
     else:
-        test_images_list = []
+        images_list = list_data_from_dir(data_path, "*.jpg")
+        if os.path.isdir("data/test"):
+            test_images_list = list_data_from_dir("data/test", "*.jpg")
+        else:
+            test_images_list = []
 
-    split = int(round(len(images_list) * 0.9))
-    images_list_train = images_list[:split]
-    images_list_test = images_list[split:] + test_images_list
+        split = int(round(len(images_list) * 0.9))
+        images_list_train = images_list[:split]
+        images_list_test = images_list[split:] + test_images_list
+
+        with open("data.json", 'w') as j:
+            json.dump({"train": images_list_train, "val": images_list_test}, j)
 
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
@@ -146,8 +155,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     # test_sequence.preload_data()
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_threshold=0.5, frequency=25, epoch_start=min(epoch//2, 50))
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
+                            iou_thresholds=(0.25, 0.5, 0.75), frequency=25, epoch_start=min(epoch//2, 0))
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
 
@@ -203,17 +212,17 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     print()
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
-    print("Fastest: {}s".format(min(durations)))
-    print("Slowest: {}s".format(max(durations)))
+    print("Fastest: {:.4f} s\t{:.2f} fps".format(min(durations), 1/min(durations)))
+    print("Slowest: {:.4f} s\t{:.2f} fps".format(max(durations), 1/max(durations)))
 
-    print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
+    # print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
     print("{} bounding box predicted over {} frames, for {} boxes in ground truth".format(prediction_count,
                                                                                           len(durations),
                                                                                           gt_count))
 
     model.save("model.h5")
-    model.save("model_no_optimizer.h5", include_optimizer=False)
-    model.save_weights("model_weights.h5", overwrite=True)
+    # model.save("model_no_optimizer.h5", include_optimizer=False)
+    # model.save_weights("model_weights.h5", overwrite=True)
 
     with open("results.json", 'w') as f:
         json.dump({"config": config,
@@ -226,14 +235,14 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                   f)
 
     # Save a visualisation of the first layer
-    first_conv_weights = model.layers[2].get_weights()[0]
-    for i in range(first_conv_weights.shape[3]):
-        f = first_conv_weights[:, :, :, i]
-        for l in range(3):
-            f[:, :, l] -= f[:, :, l].min()
-            f[:, :, l] *= 255 / f[:, :, l].max()
-        f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
-        cv2.imwrite("Conv1_filter{}.png".format(i), f)
+    # first_conv_weights = model.layers[2].get_weights()[0]
+    # for i in range(first_conv_weights.shape[3]):
+    #     f = first_conv_weights[:, :, :, i]
+    #     for l in range(3):
+    #         f[:, :, l] -= f[:, :, l].min()
+    #         f[:, :, l] *= 255 / f[:, :, l].max()
+    #     f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
+    #     cv2.imwrite("Conv1_filter{}.png".format(i), f)
 
     # tf_session = tf.compat.v1.keras.backend.get_session()
     # input_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.input._name)
