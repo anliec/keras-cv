@@ -4,6 +4,7 @@ import os
 import shutil
 import json
 import random
+from datetime import datetime
 import multiprocessing
 from time import time
 from load_yolo_data import list_data_from_dir, YoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
@@ -102,7 +103,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for KerasOn va
 
     config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
-              "layers_filters": (32, 16, 24, 32), "expansions": (1, 6, 6)}
+              "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6)}
 
     # save config
     with open("config.json", 'w') as c:
@@ -139,17 +140,20 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
                                     movement_range_width=0.2, movement_range_height=0.2,
                                     zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
+    train_sequence.preload_data()
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                    pyramid_size_list=sizes, disable_augmentation=True)
-    # full_sequence = YoloDataLoader(images_list_test + images_list_train, batch_size, input_shape, shapes,
-    #                                pyramid_size_list=sizes, disable_augmentation=True)
+    test_sequence.preload_data()
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_threshold=0.5, frequency=25, epoch_start=epoch//2)
+                            iou_threshold=0.5, frequency=25, epoch_start=min(epoch//2, 50))
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True)
+    log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-                                  use_multiprocessing=False, callbacks=[map_callback, early_stopping])
+                                  use_multiprocessing=False,
+                                  callbacks=[map_callback, early_stopping, tensorboard_callback])
 
     plot_history(history, "nNet")
 
@@ -210,6 +214,16 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     model.save("model.h5")
     model.save("model_no_optimizer.h5", include_optimizer=False)
     model.save_weights("model_weights.h5", overwrite=True)
+
+    with open("results.json", 'w') as f:
+        json.dump({"config": config,
+                   "nn_fps": 1 / np.mean(durations),
+                   "prediction_count": prediction_count,
+                   "last_mAP": map_callback.maps[-1],
+                   "mAPs": list(zip(map_callback.epochs, map_callback.maps)),
+                   "stats": list(zip(map_callback.epochs, map_callback.scores))
+                   },
+                  f)
 
     # Save a visualisation of the first layer
     first_conv_weights = model.layers[2].get_weights()[0]

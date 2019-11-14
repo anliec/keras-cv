@@ -151,6 +151,16 @@ class YoloDataLoader(Sequence):
         return (np.array([d[0] for d in data], dtype=np.float16),
                 np.array([self.get_annotation_from_yolo_gt_values(d[1]) for d in data], dtype=np.float16))
 
+    def preload_data(self):
+        print("Loading all the data to RAM...")
+        for i, data in enumerate(self.loaded_array):
+            print("{:3d}%".format(int(100 * i / len(self.loaded_array))), end='\r')
+            if len(data) == 0:
+                images = self.image_list[i * self.batch_size:(i + 1) * self.batch_size]
+                self.loaded_array[i] = self.load_data_list(images)
+        print()
+        print("Data loaded!")
+
     def augment_data(self, im, gt: YoloImageAnnotation):
         transform = self.image_generator.get_random_transform(self.image_shape)
         gt.apply_transform(transform, self.image_shape)
