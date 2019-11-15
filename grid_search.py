@@ -197,18 +197,21 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                 new_weights = []
                 lb = base_model.get_layer(name=l.name)
                 for wb, w in zip(lb.get_weights(), l.get_weights()):
+                    nw = w.copy()
                     if (np.array(wb.shape) == np.array(w.shape)).all():
                         nw = wb.copy()
                     elif len(w.shape) == 1:
-                        nw = wb[:w.shape[0]]
+                        nw[:w.shape[0]] = wb[:w.shape[0]]
                     elif len(w.shape) == 2:
-                        nw = wb[:w.shape[0], :w.shape[1]]
+                        nw[:w.shape[0], :w.shape[1]] = wb[:w.shape[0], :w.shape[1]]
                     elif len(w.shape) == 3:
-                        nw = wb[:w.shape[0], :w.shape[1], :w.shape[2]]
+                        nw[:w.shape[0], :w.shape[1], :w.shape[2]] = wb[:w.shape[0], :w.shape[1], :w.shape[2]]
                     elif len(w.shape) == 4:
-                        nw = wb[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3]]
+                        nw[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3]] = \
+                            wb[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3]]
                     elif len(w.shape) == 5:
-                        nw = wb[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3], :w.shape[4]]
+                        nw[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3], :w.shape[4]] = \
+                            wb[:w.shape[0], :w.shape[1], :w.shape[2], :w.shape[3], :w.shape[4]]
                     else:
                         print("Unexpected weights shape: {}".format(w.shape))
                         nw = w.copy()
