@@ -80,6 +80,20 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
 
     # out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
     #                           force_output_filter_count=True)
+    # out = Conv2D(filters=class_count + 1,
+    #              kernel_size=3,
+    #              strides=1,
+    #              padding='same',
+    #              activation='linear',
+    #              use_bias=True,
+    #              kernel_regularizer=l2(0.01),
+    #              name="output_0")(x)
+    # out = Softmax(axis=3, name="output_0_softmax")(out)
+    # squares.append(out)
+    # prediction_shapes.append(np.array(out.shape[1:3]))
+
+    # out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
+    #                           force_output_filter_count=True)
     out = Conv2D(filters=class_count + 1,
                  kernel_size=3,
                  strides=1,

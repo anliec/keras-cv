@@ -23,21 +23,21 @@ import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 
 
-# TO_EXPLORE = {
-#     "dropout_rate": [0.1],
-#     "dropout_strategy": ["all"],
-#     "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
-#                        (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
-#                        (8, 16, 16, 24), (8, 16, 16, 16)],
-#     "expansions": [(1, 6, 6)]
-# }
-
 TO_EXPLORE = {
-    "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-    "dropout_strategy": ["all", "last"],
-    "layers_filters": [(16, 16, 24, 24)],
+    "dropout_rate": [0.1],
+    "dropout_strategy": ["all"],
+    "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
+                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
+                       (8, 16, 16, 24), (8, 16, 16, 16)],
     "expansions": [(1, 6, 6)]
 }
+
+# TO_EXPLORE = {
+#     "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+#     "dropout_strategy": ["all", "last"],
+#     "layers_filters": [(16, 16, 24, 24)],
+#     "expansions": [(1, 6, 6)]
+# }
 
 
 def generate_combinations():
@@ -157,21 +157,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     input_shape = int(input_shape[0]), int(input_shape[1])
 
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
-
     pool = multiprocessing.Pool()
-
-    train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                    pyramid_size_list=sizes, disable_augmentation=False,
-                                    movement_range_width=0.2, movement_range_height=0.2,
-                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
-                                    use_multiprocessing=True, pool=pool)
-    test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
-                                   pyramid_size_list=sizes, disable_augmentation=True)
-
-    early_stopping = tf.keras.callbacks.EarlyStopping(patience=50, restore_best_weights=True)
-
-    detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
-                                             nms_threshold=0.3)
 
     for comb, kwargs in enumerate(generate_combinations()):
         cur_dir = os.path.join("grid_search", "test_{:03d}".format(comb))
@@ -233,6 +219,19 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         model.compile(optimizer='sgd',
                       loss=loss.compute_loss
                       )
+
+        train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
+                                        pyramid_size_list=sizes, disable_augmentation=False,
+                                        movement_range_width=0.2, movement_range_height=0.2,
+                                        zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
+                                        use_multiprocessing=True, pool=pool)
+        test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
+                                       pyramid_size_list=sizes, disable_augmentation=True)
+
+        early_stopping = tf.keras.callbacks.EarlyStopping(patience=50, restore_best_weights=True)
+
+        detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
+                                                 nms_threshold=0.3)
 
         map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                                 iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=1)
