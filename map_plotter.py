@@ -3,12 +3,13 @@ import os
 import json
 import numpy as np
 from matplotlib import pyplot as plt
+from collections import defaultdict
 
 
 def plot_map(resutls_dir: str, output_graph_file: str):
     speed_files = glob.glob(os.path.join(resutls_dir, "**", "avg_lite_speed"), recursive=True)
     speeds = []
-    maps = []
+    maps = defaultdict(list)
     for s in speed_files:
         d = os.path.dirname(s)
         results_file = os.path.join(d, "results.json")
@@ -24,10 +25,19 @@ def plot_map(resutls_dir: str, output_graph_file: str):
             print("Unable to read json {}".format(results_file))
             continue
         speeds.append(avg_inference_time)
-        nn_maps = np.array(stats['mAPs'])
-        maps.append(nn_maps.max(axis=0)[1])
+        th_best_map = defaultdict(int)
+        for e, m in stats['mAPs']:
+            for th, v in m.items():
+                th_best_map[th] = max(th_best_map[th], v)
+        for th, v in th_best_map.items():
+            maps[th].append(v)
 
-    plt.plot(speeds, maps, 'b+')
+    speed_sorted = np.array(sorted(zip(speeds, *maps.values()), key=lambda t: t[0]))
+
+    for i, k in enumerate(maps.keys()):
+        plt.plot(speed_sorted[:, 0], speed_sorted[:, i + 1], label="mAP@{}".format(k))
+
+    plt.title("Evolution of mAP with speed for different networks structure")
     plt.xlabel("Inference speed (s)")
     plt.ylabel("mAP (%)")
     plt.savefig(output_graph_file)

@@ -4,6 +4,7 @@ import json
 import numpy as np
 import pandas as pd
 import sqlite3 as sql
+from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -108,7 +109,6 @@ def plot_graph_search(base_dir: str = "grid_search"):
     results = glob.glob(os.path.join(base_dir, "*", "results.json"))
 
     data = []
-
     for i, r in enumerate(sorted(results)):
         with open(r, 'r') as f:
             j = json.load(f)
@@ -116,9 +116,53 @@ def plot_graph_search(base_dir: str = "grid_search"):
         for k, v in j["config"]:
             j[k] = v
         del j["config"]
+
+        maps = defaultdict(int)
+        for e, m in j['mAPs']:
+            for th, v in m.items():
+                maps[th] = max(maps[th], v)
+        del j['mAPs']
+        for th, v in maps.items():
+            j["mAP@{}".format(th)] = v
+
+        stats = {"TP": {}, "FP": {}, "FN": {}}
+        tp, fp, fn = j["stats"][-1]
+        for (th, tpv), fpv, fnv in zip(tp.items(), fp.values(), fn.values()):
+            stats["TP"][th] = tpv
+            stats["FP"][th] = fpv
+            stats["FN"][th] = fnv
+        del j['stats']
+        for name, values in stats.items():
+            for th, v in values.items():
+                j["{}@{}".format(name, th)] = v
+
         j["test"] = i
         data.append(j.values())
+
     df = pd.DataFrame(data, columns=j.keys())
+
+    con = sql.Connection(":memory:")
+
+    df.to_sql("glob_stats", con)
+
+    print(len(df))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
