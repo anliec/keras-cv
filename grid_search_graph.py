@@ -25,16 +25,16 @@ def generate_sql_z_query(z_name: str, filters: dict):
                 where_close += " OR "
             else:
                 first = False
-            where_close += str(k) + "='" + str(v) + "'"
+            where_close += "\"{}\"='{}'".format(k, v)
         where_close += ") "
-    query = "SELECT DISTINCT " + z_name + " FROM clusper"
+    query = "SELECT DISTINCT \"{}\" FROM glob_stats".format(z_name)
     if where_close != "":
         query += " WHERE " + where_close
     return query
 
 
 def generate_sql_xy_query(x_name: str, y_name: str, z_name: str, z_value, filters: dict, x_limit):
-    where_close = z_name + " = '" + str(z_value) + "' "
+    where_close = "\"{}\"='{}'".format(z_name, z_value)
     for k, lf in filters.items():
         where_close += "AND ("
         first = True
@@ -43,16 +43,13 @@ def generate_sql_xy_query(x_name: str, y_name: str, z_name: str, z_value, filter
                 where_close += " OR "
             else:
                 first = False
-            where_close += str(k) + "='" + str(v) + "'"
+            where_close += "\"{}\"='{}'".format(k, v)
         where_close += ") "
     if x_limit > 0:
         where_close += "AND " + x_name + " < " + str(x_limit) + " "
-    query = ("SELECT " + x_name + ","
-                                  "min(" + y_name + ") as min,"
-                                                    "max(" + y_name + ") as max,"
-                                                                      "median(" + y_name + ") as median,"
-                                                                                           "avg(" + y_name + ") as mean "
-                                                                                                             "FROM clusper ")
+    query = "SELECT \"{0}\", min(\"{1}\") as min, max(\"{1}\") as max, median(\"{1}\") as median, avg(\"{1}\") as mean " \
+            "FROM glob_stats ".format(x_name, y_name)
+
     if where_close != "":
         query += "WHERE " + where_close
     query += "GROUP BY " + x_name
