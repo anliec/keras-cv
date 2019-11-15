@@ -200,8 +200,8 @@ class YoloDataLoader(Sequence):
             # chose the closest surface size index
             wh = w * h
             # if the box is too big or too small to be detected, discard it (IoU > 0.25)
-            if wh * 4 < self.pyramid_size_list[0] or wh > 4 * self.pyramid_size_list[-1]:
-                continue
+            # if wh * 4 < self.pyramid_size_list[0] or wh > 4 * self.pyramid_size_list[-1]:
+            #     continue
             size_index = int(take_closest_index(self.squared_pyramid_size_list, wh))
             shape_index = int(size_index // self.size_per_prediction_shape)
             shape = self.annotation_shape[shape_index]
