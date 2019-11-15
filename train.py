@@ -160,11 +160,11 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
 
-    # history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-    #                               use_multiprocessing=False,
-    #                               callbacks=[map_callback, early_stopping, tensorboard_callback])
+    history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
+                                  use_multiprocessing=False,
+                                  callbacks=[map_callback, early_stopping, tensorboard_callback])
 
-    # plot_history(history, "nNet")
+    plot_history(history, "nNet")
 
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.3)
@@ -178,37 +178,37 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     fps = 1
     fps_nn = 1
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
-        # seconds_left = (len(test_sequence.image_list) - i) / fps
-        # print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
-        #       "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
-        #       end="\r")
-        # f_start = time()
-        # x = x_im.reshape((1,) + x_im.shape)
+        seconds_left = (len(test_sequence.image_list) - i) / fps
+        print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
+              "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
+              end="\r")
+        f_start = time()
+        x = x_im.reshape((1,) + x_im.shape)
         # predict result for the image
-        # start = time()
-        # raw_pred = model.predict(x)
-        # end = time()
+        start = time()
+        raw_pred = model.predict(x)
+        end = time()
 
-        # fps_nn = 1 / (end - start)
-        # durations.append(end - start)
+        fps_nn = 1 / (end - start)
+        durations.append(end - start)
         # process detection
-        # pred_roi = detection_processor.process_detection(raw_pred, pool=None)
+        pred_roi = detection_processor.process_detection(raw_pred, pool=None)
         # draw detections
-        # bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
-        # bb_im = draw_roi(bb_im, pred_roi[0][:100])
-        # bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
-        # cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
-        # prediction_count += len(pred_roi[0])
-        # process gt
-        pred_roi = detection_processor.process_detection(y_raw.reshape((1,) + y_raw.shape), pool=None)
-        # draw gt
         bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
-        bb_im = draw_roi(bb_im, pred_roi[0])
+        bb_im = draw_roi(bb_im, pred_roi[0][:100])
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
-        gt_count += len(pred_roi[0])
-        # f_end = time()
-        # fps = 1 / (f_end - f_start)
+        cv2.imwrite(os.path.join(out_dir, "{:03d}_im.jpg".format(i)), bb_im)
+        prediction_count += len(pred_roi[0])
+        # process gt
+        # pred_roi = detection_processor.process_detection(y_raw.reshape((1,) + y_raw.shape), pool=None)
+        # # draw gt
+        # bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
+        # bb_im = draw_roi(bb_im, pred_roi[0])
+        # bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
+        # cv2.imwrite(os.path.join(out_dir, "gt_{:03d}_im.jpg".format(i)), bb_im)
+        # gt_count += len(pred_roi[0])
+        f_end = time()
+        fps = 1 / (f_end - f_start)
 
     print()
     print("Prediction done in {}s ({} fps)".format(sum(durations), len(images_list_test) / sum(durations)))
