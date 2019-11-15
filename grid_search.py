@@ -194,6 +194,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         # preload base model weights
         if base_model is not None:
             for l in model.layers:
+                if len(l.get_weights()) == 0:
+                    continue
                 new_weights = []
                 lb = base_model.get_layer(name=l.name)
                 for wb, w in zip(lb.get_weights(), l.get_weights()):
