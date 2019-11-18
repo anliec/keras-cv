@@ -56,15 +56,15 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     dropout_all = dropout_rate if dropout_strategy == "all" else None
     dropout_end = dropout_rate if dropout_strategy != "all" else None
 
-    first_layer_filter = 3
+    first_layer_kernel = 3
 
     f1, f2, f3, f4 = layers_filters
     e1, e2, e3 = expansions
 
     input_layer = Input(shape=(height, width, 3), name='input')
-    x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_filter),
+    x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, input_layer, first_layer_kernel),
                                       name='Conv1_pad')(input_layer)
-    x = Conv2D(filters=f1, kernel_size=first_layer_filter, strides=2, activation=None, padding='valid',
+    x = Conv2D(filters=f1, kernel_size=first_layer_kernel, strides=2, activation=None, padding='valid',
                kernel_regularizer=l2(0.01),
                use_bias=False, name="Conv1")(x)
     x = BatchNormalization(epsilon=1e-3, momentum=0.99, name="Conv1_BN")(x)
@@ -77,20 +77,6 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=3, dropout_rate=dropout_all)
     if dropout_end is not None:
         x = Dropout(dropout_end, name='part1_dropout')(x)
-
-    # out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
-    #                           force_output_filter_count=True)
-    # out = Conv2D(filters=class_count + 1,
-    #              kernel_size=3,
-    #              strides=1,
-    #              padding='same',
-    #              activation='linear',
-    #              use_bias=True,
-    #              kernel_regularizer=l2(0.01),
-    #              name="output_0")(x)
-    # out = Softmax(axis=3, name="output_0_softmax")(out)
-    # squares.append(out)
-    # prediction_shapes.append(np.array(out.shape[1:3]))
 
     # out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
     #                           force_output_filter_count=True)

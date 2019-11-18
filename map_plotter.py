@@ -4,6 +4,9 @@ import json
 import numpy as np
 from matplotlib import pyplot as plt
 from collections import defaultdict
+import seaborn as sns
+
+sns.set()
 
 
 def plot_map(resutls_dir: str, output_graph_file: str):
@@ -35,11 +38,12 @@ def plot_map(resutls_dir: str, output_graph_file: str):
     speed_sorted = np.array(sorted(zip(speeds, *maps.values()), key=lambda t: t[0]))
 
     for i, k in enumerate(maps.keys()):
-        plt.plot(speed_sorted[:, 0], speed_sorted[:, i + 1], label="mAP@{}".format(k))
+        plt.plot(speed_sorted[:, 0], speed_sorted[:, i + 1], "+", label="mAP@{}".format(k))
 
     plt.title("Evolution of mAP with speed for different networks structure")
     plt.xlabel("Inference speed (s)")
     plt.ylabel("mAP (%)")
+    plt.legend()
     plt.savefig(output_graph_file)
 
 

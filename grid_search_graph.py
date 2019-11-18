@@ -7,18 +7,12 @@ import sqlite3 as sql
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def generate_sql_z_query(z_name: str, filters: dict):
-    where_close = ""
-    first_key = True
+    where_close = " ( \"{}]\" IS NOT NULL ) ".format(z_name)
     for k, lf in filters.items():
-        if first_key:
-            first_key = False
-        else:
-            where_close += "AND "
-        where_close += "("
+        where_close += "AND ("
         first = True
         for v in lf:
             if not first:
@@ -35,6 +29,8 @@ def generate_sql_z_query(z_name: str, filters: dict):
 
 def generate_sql_xy_query(x_name: str, y_name: str, z_name: str, z_value, filters: dict, x_limit):
     where_close = "\"{}\"='{}'".format(z_name, z_value)
+    where_close += "AND \"{0}\" IS NOT NULL ".format(x_name)   # AND \"{0}\" <> 'NaN'
+    where_close += "AND \"{0}\" IS NOT NULL ".format(y_name)
     for k, lf in filters.items():
         where_close += "AND ("
         first = True
@@ -62,7 +58,6 @@ def consolidate_data_from_db(con, x_name: str, y_name: str, z_name: str, filters
     for i in z_value_df.get(z_name):
         query = generate_sql_xy_query(x_name, y_name, z_name, i, filters, x_limit)
         print("Selecting data for", z_name, "=", i)
-        # print(query)
         cd[i] = pd.read_sql_query(query, con)
     return cd
 
