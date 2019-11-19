@@ -68,9 +68,6 @@ def plot_model():
                     if ancestor_name != "input":
                         arch.append(to_connection(ancestor_name, pool_name))
                     ancestor_name = pool_name
-                    x_offset = 0
-                else:
-                    x_offset = 0
                 arch.append(to_Conv(layer.name,
                                     n_filer=layer.filters,
                                     s_filer=layer.output.shape[2],
@@ -79,9 +76,7 @@ def plot_model():
                                     depth=layer.output.shape[2] / size_factor,
                                     to="({})".format(ancestor_name if ancestor_name == "input"
                                                      else ancestor_name + "-east"),
-                                    offset="({},0,0)".format(x_offset)))
-                # if layer.strides != (1, 1):
-                #     arch.append(to_connection(ancestor_name, layer.name))
+                                    offset="({},0,0)".format(0)))
 
     arch += [to_end()]
 
@@ -98,22 +93,6 @@ def get_last_conv_ancestor(model: tf.keras.Model, layer: tf.keras.layers.Layer):
         return layer
     else:
         return get_last_conv_ancestor(model, layer)
-
-
-# defined your arch
-# arch = [
-#     to_head('..'),
-#     to_cor(),
-#     to_begin(),
-#     to_Conv("conv1", 512, 64, offset="(0,0,0)", to="(0,0,0)", height=64, depth=64, width=2),
-#     to_Pool("pool1", offset="(0,0,0)", to="(conv1-east)"),
-#     to_Conv("conv2", 128, 64, offset="(1,0,0)", to="(pool1-east)", height=32, depth=32, width=2),
-#     to_connection("pool1", "conv2"),
-#     to_Pool("pool2", offset="(0,0,0)", to="(conv2-east)", height=28, depth=28, width=1),
-#     to_SoftMax("soft1", 10, "(3,0,0)", "(pool1-east)", caption="SOFT"),
-#     to_connection("pool2", "soft1"),
-#     to_end()
-# ]
 
 
 def main():
