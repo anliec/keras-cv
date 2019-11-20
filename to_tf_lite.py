@@ -16,6 +16,7 @@ def keras_to_tf_lite(keras_model_path: str, out_path: str, data_path: str, data_
             config = json.load(c)
     else:
         config = {}
+    config["print_summary"] = True
 
     model, sizes, shapes = load_network(**config)
 

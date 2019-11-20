@@ -121,7 +121,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
     input_size = [110, 200]
-    model, sizes, shapes = load_network(size_value=input_size)
 
     # load base model
     if base_model_config_path is not None and base_model_path is not None:
@@ -151,9 +150,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         split = int(round(len(images_list) * 0.9))
         images_list_train = images_list[:split]
         images_list_test = images_list[split:] + test_images_list
-
-    input_shape = model.input.shape[1:3]
-    input_shape = int(input_shape[0]), int(input_shape[1])
 
     for comb, kwargs in enumerate(generate_combinations()):
         cur_dir = os.path.join("grid_search", "test_{:03d}_{}_{:05d}".format(comb, os.uname()[1],
@@ -187,6 +183,9 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             json.dump(kwargs, f, indent=4)
 
         model, sizes, shapes = load_network(**kwargs)
+
+        input_shape = model.input.shape[1:3]
+        input_shape = int(input_shape[0]), int(input_shape[1])
 
         # preload base model weights
         if base_model is not None:
@@ -248,7 +247,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                                  nms_threshold=0.3)
 
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=False)
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=False,
+                                                          min_delta=1e-4)
         map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                                 iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=1)
 
@@ -271,6 +271,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                 f[:, :, l] *= 255 / f[:, :, l].max()
             f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
             cv2.imwrite(os.path.join(cur_dir, "filters", "Conv1_filter{}.png".format(i)), f)
+        del first_conv_weights
 
         prediction_count = 0
         fps = 1
