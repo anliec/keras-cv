@@ -250,7 +250,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=False,
                                                           min_delta=1e-4)
         map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                                iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=1)
+                                iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(50, epoch // 2))
 
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                       use_multiprocessing=False, callbacks=[map_callback, early_stopping])
