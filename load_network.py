@@ -40,7 +40,8 @@ class_count = 1  # excluding background (doesn't properly update hand crafted we
 
 
 def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = "all",
-                 layers_filters: tuple = (16, 16, 24, 32), expansions: tuple = (1, 6, 6)):
+                 layers_filters: tuple = (16, 16, 24, 32), expansions: tuple = (1, 6, 6), print_summary=True,
+                 use_resnet=False, use_mobile_net=False):
     height, width = size_value
 
     ####################################
@@ -71,10 +72,10 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     x = tf.keras.layers.ReLU(6., name="Conv1_relu")(x)
     if dropout_all is not None:
         x = Dropout(dropout_all, name='Conv1_dropout')(x)
-    x = _inverted_res_block(x, filters=f2, alpha=alpha, stride=1, expansion=e1, block_id=0, dropout_rate=dropout_all)
-    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=2, expansion=e2, block_id=1, dropout_rate=dropout_all)
-    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=2, dropout_rate=dropout_all)
-    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=3, dropout_rate=dropout_all)
+    x = _inverted_res_block(x, filters=f2, alpha=alpha, stride=1, expansion=e1, block_id=0, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
+    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=2, expansion=e2, block_id=1, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
+    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=2, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
+    x = _inverted_res_block(x, filters=f3, alpha=alpha, stride=1, expansion=e2, block_id=3, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
     if dropout_end is not None:
         x = Dropout(dropout_end, name='part1_dropout')(x)
 
@@ -106,9 +107,9 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     squares.append(out)
     prediction_shapes.append(np.array(out.shape[1:3]))
 
-    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=2, expansion=e3, block_id=4, dropout_rate=dropout_all)
-    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=1, expansion=e3, block_id=5, dropout_rate=dropout_all)
-    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=1, expansion=e3, block_id=6, dropout_rate=dropout_all)
+    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=2, expansion=e3, block_id=4, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
+    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=1, expansion=e3, block_id=5, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
+    x = _inverted_res_block(x, filters=f4, alpha=alpha, stride=1, expansion=e3, block_id=6, dropout_rate=dropout_all, use_resnet=use_resnet, inverted_bottle_neck=use_mobile_net)
     if dropout_end is not None:
         x = Dropout(dropout_end, name='part2_dropout')(x)
 
@@ -163,7 +164,8 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
 
     model = Model(inputs=input_layer, outputs=prediction)
 
-    model.summary()
+    if print_summary:
+        model.summary()
     return model, sizes, prediction_shapes
 
 
@@ -209,7 +211,15 @@ def correct_pad(backend, inputs, kernel_size):
 
 
 def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False,
-                        use_resnet: bool = False, dropout_rate: float = None):
+                        use_resnet: bool = False, dropout_rate: float = None, inverted_bottle_neck=False):
+    if inverted_bottle_neck:
+        return mobilenet_inverted_res_block(inputs, expansion, stride, alpha, filters, block_id,
+                                            force_output_filter_count)
+    else:
+        return my_block(inputs, stride, filters, block_id, use_resnet, dropout_rate)
+
+
+def my_block(inputs, stride, filters, block_id, use_resnet: bool = False, dropout_rate: float = None):
     prefix = 'block_{}_'.format(block_id)
     x = Conv2D(filters=filters,
                kernel_size=3,
@@ -231,63 +241,64 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, for
     return x
 
 
-# def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False):
-#     channel_axis = 1 if tf.keras.backend.image_data_format() == 'channels_first' else -1
-#
-#     in_channels = tf.keras.backend.int_shape(inputs)[channel_axis]
-#     pointwise_conv_filters = int(filters * alpha)
-#     if not force_output_filter_count:
-#         pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
-#     else:
-#         pointwise_filters = pointwise_conv_filters
-#     x = inputs
-#     prefix = 'block_{}_'.format(block_id)
-#
-#     if block_id:
-#         # Expand
-#         x = tf.keras.layers.Conv2D(expansion * in_channels,
-#                                    kernel_size=1,
-#                                    padding='same',
-#                                    use_bias=False,
-#                                    activation=None,
-#                                    name=prefix + 'expand')(x)
-#         x = tf.keras.layers.BatchNormalization(axis=channel_axis,
-#                                                epsilon=1e-3,
-#                                                momentum=0.999,
-#                                                name=prefix + 'expand_BN')(x)
-#         x = tf.keras.layers.ReLU(6., name=prefix + 'expand_relu')(x)
-#     else:
-#         prefix = 'expanded_conv_'
-#
-#     # Depthwise
-#     if stride == 2:
-#         x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, x, 3),
-#                                           name=prefix + 'pad')(x)
-#     x = tf.keras.layers.DepthwiseConv2D(kernel_size=3,
-#                                         strides=stride,
-#                                         activation=None,
-#                                         use_bias=False,
-#                                         padding='same' if stride == 1 else 'valid',
-#                                         name=prefix + 'depthwise')(x)
-#     x = tf.keras.layers.BatchNormalization(axis=channel_axis,
-#                                            epsilon=1e-3,
-#                                            momentum=0.999,
-#                                            name=prefix + 'depthwise_BN')(x)
-#
-#     x = tf.keras.layers.ReLU(6., name=prefix + 'depthwise_relu')(x)
-#
-#     # Project
-#     x = tf.keras.layers.Conv2D(pointwise_filters,
-#                                kernel_size=1,
-#                                padding='same',
-#                                use_bias=False,
-#                                activation=None,
-#                                name=prefix + 'project')(x)
-#     x = tf.keras.layers.BatchNormalization(axis=channel_axis,
-#                                            epsilon=1e-3,
-#                                            momentum=0.999,
-#                                            name=prefix + 'project_BN')(x)
-#
-#     if in_channels == pointwise_filters and stride == 1:
-#         return tf.keras.layers.Add(name=prefix + 'add')([inputs, x])
-#     return x
+def mobilenet_inverted_res_block(inputs, expansion, stride, alpha, filters, block_id,
+                                 force_output_filter_count: bool = False):
+    channel_axis = 1 if tf.keras.backend.image_data_format() == 'channels_first' else -1
+
+    in_channels = tf.keras.backend.int_shape(inputs)[channel_axis]
+    pointwise_conv_filters = int(filters * alpha)
+    if not force_output_filter_count:
+        pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
+    else:
+        pointwise_filters = pointwise_conv_filters
+    x = inputs
+    prefix = 'block_{}_'.format(block_id)
+
+    if block_id:
+        # Expand
+        x = tf.keras.layers.Conv2D(expansion * in_channels,
+                                   kernel_size=1,
+                                   padding='same',
+                                   use_bias=False,
+                                   activation=None,
+                                   name=prefix + 'expand')(x)
+        x = tf.keras.layers.BatchNormalization(axis=channel_axis,
+                                               epsilon=1e-3,
+                                               momentum=0.999,
+                                               name=prefix + 'expand_BN')(x)
+        x = tf.keras.layers.ReLU(6., name=prefix + 'expand_relu')(x)
+    else:
+        prefix = 'expanded_conv_'
+
+    # Depthwise
+    if stride == 2:
+        x = tf.keras.layers.ZeroPadding2D(padding=correct_pad(tf.keras.backend, x, 3),
+                                          name=prefix + 'pad')(x)
+    x = tf.keras.layers.DepthwiseConv2D(kernel_size=3,
+                                        strides=stride,
+                                        activation=None,
+                                        use_bias=False,
+                                        padding='same' if stride == 1 else 'valid',
+                                        name=prefix + 'depthwise')(x)
+    x = tf.keras.layers.BatchNormalization(axis=channel_axis,
+                                           epsilon=1e-3,
+                                           momentum=0.999,
+                                           name=prefix + 'depthwise_BN')(x)
+
+    x = tf.keras.layers.ReLU(6., name=prefix + 'depthwise_relu')(x)
+
+    # Project
+    x = tf.keras.layers.Conv2D(pointwise_filters,
+                               kernel_size=1,
+                               padding='same',
+                               use_bias=False,
+                               activation=None,
+                               name=prefix + 'project')(x)
+    x = tf.keras.layers.BatchNormalization(axis=channel_axis,
+                                           epsilon=1e-3,
+                                           momentum=0.999,
+                                           name=prefix + 'project_BN')(x)
+
+    if in_channels == pointwise_filters and stride == 1:
+        return tf.keras.layers.Add(name=prefix + 'add')([inputs, x])
+    return x

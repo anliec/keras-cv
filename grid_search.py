@@ -11,9 +11,7 @@ from load_network import load_network
 from callback import MAP_eval
 from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
-from metrics import map_metric
 
-from tensorflow.python.keras.utils.vis_utils import plot_model, model_to_dot
 import tensorflow as tf
 
 import matplotlib
@@ -25,11 +23,11 @@ matplotlib.use('Agg')
 
 TO_EXPLORE = {
     "dropout_rate": [0.2],
-    "dropout_strategy": ["last"],
-    "layers_filters": [(32, 16, 24, 32), (16, 16, 24, 32), (16, 16, 24, 24), (16, 16, 16, 24), (16, 8, 16, 24),
-                       (8, 8, 16, 24), (8, 8, 16, 16), (8, 8, 8, 16), (8, 8, 8, 8), (8, 16, 24, 32), (8, 16, 24, 24),
-                       (8, 16, 16, 24), (8, 16, 16, 16), (16, 16, 16, 16), (32, 24, 24, 24), (24, 24, 24, 24)],
-    "expansions": [(1, 6, 6)]
+    "dropout_strategy": ["all"],
+    "layers_filters": [(32, 32, 64, 64), (16, 16, 24, 24), (8, 8, 16, 16)],
+    "expansions": [(1, 6, 6)],
+    "use_resnet": [False, True],
+    "use_mobile_net": [True, False]
 }
 
 # TO_EXPLORE = {
@@ -48,7 +46,8 @@ def generate_combinations():
     cur_pos = {k: 0 for k in TO_EXPLORE.keys()}
     while True:
         kwargs = {k: TO_EXPLORE[k][pos] for k, pos in cur_pos.items()}
-        if kwargs["dropout_strategy"] != "all" or kwargs["dropout_rate"] <= 0.3:
+        if (kwargs["dropout_strategy"] != "all" or kwargs["dropout_rate"] <= 0.3) and \
+                not (not kwargs["use_resnet"] and kwargs["use_mobile_net"]):
             yield kwargs
         for k, v in cur_pos.items():
             if v + 1 < len(TO_EXPLORE[k]):
@@ -61,15 +60,15 @@ def generate_combinations():
 
 
 # from https://stackoverflow.com/questions/49525776/how-to-calculate-a-mobilenet-flops-in-keras
-def get_flops(model):
-    run_meta = tf.compat.v1.RunMetadata()
-    opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-
-    # We use the Keras session graph in the call to the profiler.
-    flops = tf.compat.v1.profiler.profile(graph=tf.compat.v1.keras.backend.get_session().graph,
-                                          run_meta=run_meta, cmd='op', options=opts)
-
-    return flops.total_float_ops  # Prints the "flops" of the model.
+# def get_flops(model):
+#     run_meta = tf.compat.v1.RunMetadata()
+#     opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
+#
+#     # We use the Keras session graph in the call to the profiler.
+#     flops = tf.compat.v1.profiler.profile(graph=tf.compat.v1.keras.backend.get_session().graph,
+#                                           run_meta=run_meta, cmd='op', options=opts)
+#
+#     return flops.total_float_ops  # Prints the "flops" of the model.
 
 
 def plot_history(history, base_name=""):
@@ -156,11 +155,9 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
 
-    loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
-    pool = multiprocessing.Pool()
-
     for comb, kwargs in enumerate(generate_combinations()):
-        cur_dir = os.path.join("grid_search", "test_{:03d}".format(comb))
+        cur_dir = os.path.join("grid_search", "test_{:03d}_{}_{:05d}".format(comb, os.uname()[1],
+                                                                             random.randint(0, 10000)))
         try:
             os.makedirs(cur_dir, exist_ok=False)
         except FileExistsError as e:
@@ -230,10 +227,16 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                     new_weights.append(nw)
                 l.set_weights(new_weights)
 
-        model.compile(optimizer='sgd',
+        opt = tf.keras.optimizers.SGD(learning_rate=0.01,
+                                      momentum=0.9,
+                                      decay=1e-2/epoch)
+        loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
+
+        model.compile(optimizer=opt,
                       loss=loss.compute_loss
                       )
 
+        pool = multiprocessing.Pool()
         train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                         pyramid_size_list=sizes, disable_augmentation=False,
                                         movement_range_width=0.2, movement_range_height=0.2,
@@ -242,11 +245,10 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
                                        pyramid_size_list=sizes, disable_augmentation=True)
 
-        early_stopping = tf.keras.callbacks.EarlyStopping(patience=50, restore_best_weights=True)
-
         detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                                  nms_threshold=0.3)
 
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=False)
         map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                                 iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=1)
 
@@ -270,7 +272,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
             cv2.imwrite(os.path.join(cur_dir, "filters", "Conv1_filter{}.png".format(i)), f)
 
-        durations = []
         prediction_count = 0
         fps = 1
         fps_nn = 1
@@ -291,7 +292,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 
             fps_nn = 1 / (end - start)
             fps_nn_list.append(fps_nn)
-            durations.append(end - start)
             # process detection
             pred_roi = detection_processor.process_detection(raw_pred, pool=None)
             # draw detections
@@ -312,12 +312,24 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             json.dump({"config": kwargs,
                        "nn_fps": [np.mean(fps_nn_list)],
                        "prediction_count": prediction_count,
-                       "flops": get_flops(model),
+                       "flops": 0,
                        "last_mAP": map_callback.maps[-1],
                        "mAPs": list(zip(map_callback.epochs, map_callback.maps)),
                        "stats": list(zip(map_callback.epochs, map_callback.scores))
                        },
                       f)
+
+        del model
+        del opt
+        del loss
+        del train_sequence
+        del test_sequence
+        del pool
+        del detection_processor
+        del history
+        del map_callback
+        del early_stopping
+        del arrays
 
 
 if __name__ == '__main__':
