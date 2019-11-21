@@ -272,7 +272,21 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             cv2.imwrite(os.path.join(cur_dir, "filters", "Conv1_filter{}.png".format(i)), f)
         del first_conv_weights
 
-        prediction_count = 0
+        if len(map_callback.maps) == 0:
+            map_callback.maps.append(None)
+            map_callback.epochs.append(None)
+            map_callback.scores.append(None)
+
+        with open(os.path.join(cur_dir, "results.json"), 'w') as f:
+            json.dump({"config": kwargs,
+                       "nn_fps": [np.mean(fps_nn_list)],
+                       "flops": 0,
+                       "last_mAP": map_callback.maps[-1],
+                       "mAPs": list(zip(map_callback.epochs, map_callback.maps)),
+                       "stats": list(zip(map_callback.epochs, map_callback.scores))
+                       },
+                      f)
+
         fps = 1
         fps_nn = 1
         fps_nn_list = []
@@ -299,25 +313,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
             bb_im = draw_roi(bb_im, pred_roi[0][:100])
             bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
             cv2.imwrite(os.path.join(cur_dir, "frames", "{:03d}_im.jpg".format(i)), bb_im)
-            prediction_count += len(pred_roi[0])
             f_end = time()
             fps = 1 / (f_end - f_start)
-
-        if len(map_callback.maps) == 0:
-            map_callback.maps.append(None)
-            map_callback.epochs.append(None)
-            map_callback.scores.append(None)
-
-        with open(os.path.join(cur_dir, "results.json"), 'w') as f:
-            json.dump({"config": kwargs,
-                       "nn_fps": [np.mean(fps_nn_list)],
-                       "prediction_count": prediction_count,
-                       "flops": 0,
-                       "last_mAP": map_callback.maps[-1],
-                       "mAPs": list(zip(map_callback.epochs, map_callback.maps)),
-                       "stats": list(zip(map_callback.epochs, map_callback.scores))
-                       },
-                      f)
 
         pool.close()
         del model
