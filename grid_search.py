@@ -152,8 +152,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         images_list_test = images_list[split:] + test_images_list
 
     for comb, kwargs in enumerate(generate_combinations()):
-        cur_dir = os.path.join("grid_search", "test_{:03d}_{}_{:05d}".format(comb, os.uname()[1],
-                                                                             random.randint(0, 10000)))
+        cur_dir = os.path.join("grid_search", "test_{:03d}_{}".format(comb, os.uname()[1]))
         try:
             os.makedirs(cur_dir, exist_ok=False)
         except FileExistsError as e:
@@ -320,6 +319,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                        },
                       f)
 
+        pool.close()
         del model
         del opt
         del loss
