@@ -94,7 +94,7 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
         r[:, :, 0] = 1.0
 
 
-def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool = False):
+def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01):
     # setup tensorflow backend (prevent "Blas SGEMM launch failed" error)
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
@@ -102,7 +102,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     sess = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
-    config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
+    config = {"size_value": [110, 200], "dropout_rate": 0.2, "dropout_strategy": "all",
               "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6)}
 
     # save config
@@ -138,7 +138,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
-    model.compile(optimizer='sgd',
+    opt = tf.keras.optimizers.SGD(learning_rate=learning_rate,
+                                  momentum=0.99,
+                                  decay=1e-2/epoch)
+    model.compile(optimizer=opt,
                   loss=loss.compute_loss
                   )
 
@@ -146,7 +149,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
 
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
-                                    movement_range_width=0.2, movement_range_height=0.2,
+                                    movement_range_width=0.05, movement_range_height=0.05,
                                     zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
     # train_sequence.preload_data()
@@ -155,7 +158,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, random_init: bool
     # test_sequence.preload_data()
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_thresholds=(0.25, 0.5, 0.75), frequency=25, epoch_start=min(epoch//2, 0))
+                            iou_thresholds=(0.25, 0.5, 0.75), frequency=5, epoch_start=min(epoch//2, 1))
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
@@ -280,12 +283,12 @@ if __name__ == '__main__':
                         default=1,
                         help='Number of epoch during training',
                         dest="epoch")
-    parser.add_argument('-r', '--random-weights',
+    parser.add_argument('-lr', '--learning-rate',
                         required=False,
-                        help='Initialise weights with random values',
-                        dest="random_init",
-                        action='store_true')
+                        type=float,
+                        default=0.01,
+                        dest="lr")
     args = parser.parse_args()
 
-    train(args.data_path, args.batch, args.epoch, args.random_init)
+    train(args.data_path, args.batch, args.epoch, args.lr)
 
