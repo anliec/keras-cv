@@ -158,7 +158,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     # test_sequence.preload_data()
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_thresholds=(0.25, 0.5, 0.75), frequency=5, epoch_start=min(epoch//2, 1))
+                            iou_thresholds=(0.25, 0.5, 0.75), frequency=5, epoch_start=min(epoch//2, 25))
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
@@ -177,7 +177,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     os.makedirs(out_dir, exist_ok=True)
     durations = []
     prediction_count = 0
-    gt_count = 0
+    # gt_count = 0
     fps = 1
     fps_nn = 1
     for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):

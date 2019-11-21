@@ -279,7 +279,6 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 
         with open(os.path.join(cur_dir, "results.json"), 'w') as f:
             json.dump({"config": kwargs,
-                       "nn_fps": [np.mean(fps_nn_list)],
                        "flops": 0,
                        "last_mAP": map_callback.maps[-1],
                        "mAPs": list(zip(map_callback.epochs, map_callback.maps)),
