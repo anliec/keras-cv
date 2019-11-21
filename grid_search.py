@@ -26,7 +26,7 @@ TO_EXPLORE = {
     "dropout_strategy": ["all"],
     "layers_filters": [(32, 32, 64, 64), (16, 16, 24, 24), (8, 8, 16, 16)],
     "expansions": [(1, 6, 6)],
-    "use_resnet": [False, True],
+    "use_resnet": [True, False],
     "use_mobile_net": [False]
 }
 
