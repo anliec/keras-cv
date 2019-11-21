@@ -177,11 +177,10 @@ class YoloDataLoader(Sequence):
         return im, gt
 
     def data_list_iterator(self):
-        for image in self.image_list:
-            im, gt = self.load_yolo_pair(image)
-            if not self.disable_augmentation:
-                im, gt = self.augment_data(im, gt)
-            yield im, self.get_annotation_from_yolo_gt_values(gt)
+        for i in range(self.__len__()):
+            batch = self.__getitem__(i)
+            for im, annotation in zip(*batch):
+                yield im, annotation
 
     def get_annotation_from_yolo_gt_values(self, gt: YoloImageAnnotation):
         raws = [np.zeros(shape=list(s.astype(np.int)) + [self.class_count], dtype=np.float16)
