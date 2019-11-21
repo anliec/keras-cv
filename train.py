@@ -139,7 +139,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
     opt = tf.keras.optimizers.SGD(learning_rate=learning_rate,
-                                  momentum=0.99,
+                                  momentum=0.8,
                                   decay=1e-2/epoch)
     model.compile(optimizer=opt,
                   loss=loss.compute_loss

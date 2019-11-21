@@ -20,14 +20,14 @@ import matplotlib.pyplot as plt
 # solve plotting issues with matplotlib when no X connection is available
 matplotlib.use('Agg')
 
-
+# over fitting test
 TO_EXPLORE = {
-    "dropout_rate": [0.2],
+    "dropout_rate": [0.0],
     "dropout_strategy": ["all"],
     "layers_filters": [(32, 32, 64, 64), (16, 16, 24, 24), (8, 8, 16, 16)],
     "expansions": [(1, 6, 6)],
     "use_resnet": [True, False],
-    "use_mobile_net": [False]
+    "use_mobile_net": [True, False]
 }
 
 # TO_EXPLORE = {
@@ -226,7 +226,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                 l.set_weights(new_weights)
 
         opt = tf.keras.optimizers.SGD(learning_rate=0.01,
-                                      momentum=0.9,
+                                      momentum=0.8,
                                       decay=1e-2/epoch)
         loss = SSDLikeLoss(neg_pos_ratio=3, n_neg_min=0, alpha=1.0)
 
@@ -236,7 +236,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 
         pool = multiprocessing.Pool()
         train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                        pyramid_size_list=sizes, disable_augmentation=False,
+                                        pyramid_size_list=sizes, disable_augmentation=True,
                                         movement_range_width=0.2, movement_range_height=0.2,
                                         zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                         use_multiprocessing=True, pool=pool)
