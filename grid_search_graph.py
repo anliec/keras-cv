@@ -63,7 +63,7 @@ def consolidate_data_from_db(con, x_name: str, y_name: str, z_name: str, filters
 
 
 def generate_plot(con, x_arg_name, y_arg_name, z_arg_name, filters, save_to_file=True, x_limit=-1, x_name=None,
-                  y_name=None):
+                  y_name=None, y_lim=None):
     if x_name is None:
         x_name = x_arg_name
     if y_name is None:
@@ -84,16 +84,20 @@ def generate_plot(con, x_arg_name, y_arg_name, z_arg_name, filters, save_to_file
         plt.ylabel(y_name.replace('_', ' '))
     plt.xlabel(x_name.replace('_', ' '))
     plt.legend()
+    if y_lim is not None:
+        plt.ylim(y_lim)
     # plt.title("Evolution of acuracy acording to the number of training examples")
     if save_to_file:
-        algo_name = "all_"
-        if "reduction_method" in filters.keys():
-            algo_name = '_'.join(map(str, filters["reduction_method"])) + '_'
+        block_name = "all_"
+        if "block_type" in filters.keys():
+            block_name = '_'.join(map(str, filters["block_type"])) + '_'
         layers = ""
-        if "layers" in filters.keys():
-            layers = '_' + '_'.join(
-                map(lambda x: x.replace('(', '').replace(')', '').replace(',', ''), filters["layers"]))
-        plt.savefig("graphs/clusper_" + algo_name + x_name + "_" + y_name + "_" + z_arg_name + layers + ".png")
+        if "layers_filters" in filters.keys():
+            layers = "_" + '_'.join(map(str, filters["layers_filters"]))
+        suffix = ""
+        if y_lim is not None:
+            suffix += "_zoomed_{}_{}".format(y_lim[0], y_lim[1])
+        plt.savefig("graphs/" + block_name + x_name + "_" + y_name + "_" + z_arg_name + layers + suffix + ".png")
     plt.show()
 
 

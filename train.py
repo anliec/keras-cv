@@ -103,7 +103,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
     config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
-              "layers_filters": (8, 8, 16, 16), "expansions": (1, 6, 6), 'use_mobile_net': True}
+              "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6), 'use_mobile_net': False,
+              "use_resnet": True}
 
     # save config
     with open("config.json", 'w') as c:
