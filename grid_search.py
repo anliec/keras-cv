@@ -16,9 +16,11 @@ import tensorflow as tf
 
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # solve plotting issues with matplotlib when no X connection is available
 matplotlib.use('Agg')
+sns.set()
 
 # over fitting test
 TO_EXPLORE = {

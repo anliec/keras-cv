@@ -18,9 +18,12 @@ import tensorflow as tf
 
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # solve plotting issues with matplotlib when no X connection is available
 matplotlib.use('Agg')
+
+sns.set()
 
 
 def plot_history(history, base_name=""):
@@ -154,7 +157,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.05, movement_range_height=0.05,
-                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
+                                    zoom_range=(0.9, 1.1), flip=True, brightness_range=(0.9, 1.1),
                                     use_multiprocessing=True, pool=pool)
     # train_sequence.preload_data()
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
