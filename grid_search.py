@@ -252,7 +252,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                                 iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(50, epoch // 2))
 
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
-                                      use_multiprocessing=False, callbacks=[map_callback, early_stopping])
+                                      use_multiprocessing=False, callbacks=[map_callback])
 
         plot_history(history, os.path.join(cur_dir, "nNet"))
 
@@ -326,7 +326,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         del detection_processor
         del history
         del map_callback
-        del early_stopping
+        # del early_stopping
         del arrays
 
 
