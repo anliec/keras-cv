@@ -105,7 +105,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     sess = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
-    config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
+    config = {"size_value": [110, 200], "dropout_rate": 0.0, "dropout_strategy": "all",
               "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6), 'use_mobile_net': False,
               "use_resnet": True}
 
@@ -157,7 +157,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                     pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.05, movement_range_height=0.05,
-                                    zoom_range=(0.9, 1.1), flip=True, brightness_range=(0.9, 1.1),
+                                    zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
     # train_sequence.preload_data()
     test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,
