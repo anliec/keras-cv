@@ -286,34 +286,35 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
                        },
                       f)
 
-        fps = 1
-        fps_nn = 1
-        fps_nn_list = []
-        os.makedirs(os.path.join(cur_dir, "frames"), exist_ok=False)
-        for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
-            seconds_left = (len(test_sequence.image_list) - i) / fps
-            print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
-                  "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60,
-                            fps_nn),
-                  end="\r")
-            f_start = time()
-            x = x_im.reshape((1,) + x_im.shape)
-            # predict result for the image
-            start = time()
-            raw_pred = model.predict(x)
-            end = time()
+        if history.history['loss'][-1] < 10.0:
+            fps = 1
+            fps_nn = 1
+            fps_nn_list = []
+            os.makedirs(os.path.join(cur_dir, "frames"), exist_ok=False)
+            for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
+                seconds_left = (len(test_sequence.image_list) - i) / fps
+                print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
+                      "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60,
+                                fps_nn),
+                      end="\r")
+                f_start = time()
+                x = x_im.reshape((1,) + x_im.shape)
+                # predict result for the image
+                start = time()
+                raw_pred = model.predict(x)
+                end = time()
 
-            fps_nn = 1 / (end - start)
-            fps_nn_list.append(fps_nn)
-            # process detection
-            pred_roi = detection_processor.process_detection(raw_pred, pool=None)
-            # draw detections
-            bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
-            bb_im = draw_roi(bb_im, pred_roi[0][:100])
-            bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(os.path.join(cur_dir, "frames", "{:03d}_im.jpg".format(i)), bb_im)
-            f_end = time()
-            fps = 1 / (f_end - f_start)
+                fps_nn = 1 / (end - start)
+                fps_nn_list.append(fps_nn)
+                # process detection
+                pred_roi = detection_processor.process_detection(raw_pred, pool=None)
+                # draw detections
+                bb_im = ((x_im * RGB_STD) + RGB_AVERAGE).astype(np.uint8)
+                bb_im = draw_roi(bb_im, pred_roi[0][:100])
+                bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(os.path.join(cur_dir, "frames", "{:03d}_im.jpg".format(i)), bb_im)
+                f_end = time()
+                fps = 1 / (f_end - f_start)
 
         pool.close()
         del model
