@@ -94,7 +94,7 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
         r[:, :, 0] = 1.0
 
 
-def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01):
+def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01, base_weight=None):
     # setup tensorflow backend (prevent "Blas SGEMM launch failed" error)
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
@@ -102,7 +102,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     sess = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
-    config = {"size_value": [110, 200], "dropout_rate": 0.2, "dropout_strategy": "all",
+    config = {"size_value": [110, 200], "dropout_rate": 0.0, "dropout_strategy": "all",
               "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6)}
 
     # save config
@@ -114,6 +114,9 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     # plot_model(model, to_file="model.png", show_shapes=False, show_layer_names=True)
     input_shape = model.input.shape[1:3]
     input_shape = int(input_shape[0]), int(input_shape[1])
+
+    if base_weight is not None:
+        model.load_weights(base_weight)
 
     # generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
 
@@ -148,7 +151,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     pool = multiprocessing.Pool()
 
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                    pyramid_size_list=sizes, disable_augmentation=False,
+                                    pyramid_size_list=sizes, disable_augmentation=True,
                                     movement_range_width=0.05, movement_range_height=0.05,
                                     zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
@@ -159,13 +162,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                             iou_thresholds=(0.25, 0.5, 0.75), frequency=5, epoch_start=min(epoch//2, 25))
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
+    # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                   use_multiprocessing=False,
-                                  callbacks=[map_callback, early_stopping, tensorboard_callback])
+                                  callbacks=[map_callback, tensorboard_callback])
 
     plot_history(history, "nNet")
 
@@ -180,10 +183,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     # gt_count = 0
     fps = 1
     fps_nn = 1
-    for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
-        seconds_left = (len(test_sequence.image_list) - i) / fps
+    for i, (x_im, y_raw) in enumerate(train_sequence.data_list_iterator()):
+        seconds_left = (len(train_sequence.image_list) - i) / fps
         print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
-              "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
+              "".format(i, len(train_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
               end="\r")
         f_start = time()
         x = x_im.reshape((1,) + x_im.shape)
@@ -288,7 +291,12 @@ if __name__ == '__main__':
                         type=float,
                         default=0.01,
                         dest="lr")
+    parser.add_argument('-m', '--base-weights',
+                        required=False,
+                        type=str,
+                        default=None,
+                        dest="weights")
     args = parser.parse_args()
 
-    train(args.data_path, args.batch, args.epoch, args.lr)
+    train(args.data_path, args.batch, args.epoch, args.lr, args.weights)
 

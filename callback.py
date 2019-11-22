@@ -19,11 +19,13 @@ class MAP_eval(tf.keras.callbacks.Callback):
         self.processor = DetectionProcessor(sizes, shapes, image_size, detection_threshold, mns_threshold)
 
     def on_epoch_end(self, epoch, logs={}):
-        if logs['loss'] > 10.0:
-            print()
-            print("mAP computation skipped, loss is too high")
+        if epoch < self.epoch_start:
             return
-        elif epoch > self.epoch_start and epoch % self.frequency == self.frequency - 1:
+        elif epoch % self.frequency == self.frequency - 1:
+            if logs['loss'] > 10.0:
+                print()
+                print("mAP computation skipped, loss is too high")
+                return
             mean_ap, tp, fp, fn = eval_map(self.validation_data, self.model, self.processor, self.iou_thresholds)
             print()
             for th in self.iou_thresholds:
