@@ -166,13 +166,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
                             iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(epoch//2, 25))
-    # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
 
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                   use_multiprocessing=False,
-                                  callbacks=[map_callback, tensorboard_callback])
+                                  callbacks=[map_callback, tensorboard_callback, early_stopping])
 
     model.save("model.h5")
 
