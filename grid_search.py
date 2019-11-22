@@ -237,7 +237,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
         pool = multiprocessing.Pool()
         train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
                                         pyramid_size_list=sizes, disable_augmentation=True,
-                                        movement_range_width=0.2, movement_range_height=0.2,
+                                        movement_range_width=0.05, movement_range_height=0.05,
                                         zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                         use_multiprocessing=True, pool=pool)
         test_sequence = YoloDataLoader(images_list_test, batch_size, input_shape, shapes,

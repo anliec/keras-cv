@@ -102,8 +102,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     sess = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
-    config = {"size_value": [110, 200], "dropout_rate": 0.0, "dropout_strategy": "all",
-              "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6)}
+    config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
+              "layers_filters": (8, 8, 16, 16), "expansions": (1, 6, 6), 'use_mobile_net': True}
 
     # save config
     with open("config.json", 'w') as c:
@@ -151,7 +151,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     pool = multiprocessing.Pool()
 
     train_sequence = YoloDataLoader(images_list_train, batch_size, input_shape, shapes,
-                                    pyramid_size_list=sizes, disable_augmentation=True,
+                                    pyramid_size_list=sizes, disable_augmentation=False,
                                     movement_range_width=0.05, movement_range_height=0.05,
                                     zoom_range=(0.7, 1.1), flip=True, brightness_range=(0.7, 1.3),
                                     use_multiprocessing=True, pool=pool)
@@ -161,7 +161,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     # test_sequence.preload_data()
 
     map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_thresholds=(0.25, 0.5, 0.75), frequency=5, epoch_start=min(epoch//2, 25))
+                            iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(epoch//2, 25))
     # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
@@ -169,6 +169,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                   use_multiprocessing=False,
                                   callbacks=[map_callback, tensorboard_callback])
+
+    model.save("model.h5")
 
     plot_history(history, "nNet")
 
@@ -183,10 +185,10 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     # gt_count = 0
     fps = 1
     fps_nn = 1
-    for i, (x_im, y_raw) in enumerate(train_sequence.data_list_iterator()):
-        seconds_left = (len(train_sequence.image_list) - i) / fps
+    for i, (x_im, y_raw) in enumerate(test_sequence.data_list_iterator()):
+        seconds_left = (len(test_sequence.image_list) - i) / fps
         print("Processing Validation Frame {:4d}/{:d}  -  {:.2f} fps  ETA: {} min {} sec (NN: {:.2f} fps)"
-              "".format(i, len(train_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
+              "".format(i, len(test_sequence.image_list), fps, int(seconds_left // 60), int(seconds_left) % 60, fps_nn),
               end="\r")
         f_start = time()
         x = x_im.reshape((1,) + x_im.shape)
@@ -221,15 +223,6 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     print("Fastest: {:.4f}s  {:.2f} fps".format(min(durations), 1/min(durations)))
     print("Slowest: {:.4f}s  {:.2f} fps".format(max(durations), 1/max(durations)))
 
-    # print("fps, ".join(["{:2d}".format(int(1.0/t)) for t in durations]) + "fps")
-    # print("{} bounding box predicted over {} frames, for {} boxes in ground truth".format(prediction_count,
-    #                                                                                       len(durations),
-    #                                                                                       gt_count))
-
-    model.save("model.h5")
-    # model.save("model_no_optimizer.h5", include_optimizer=False)
-    # model.save_weights("model_weights.h5", overwrite=True)
-
     with open("results.json", 'w') as f:
         json.dump({"config": config,
                    "nn_fps": 1 / np.mean(durations),
@@ -249,22 +242,6 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     #         f[:, :, l] *= 255 / f[:, :, l].max()
     #     f = cv2.cvtColor(f.astype(np.uint8), cv2.COLOR_RGB2BGR)
     #     cv2.imwrite("Conv1_filter{}.png".format(i), f)
-
-    # tf_session = tf.compat.v1.keras.backend.get_session()
-    # input_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.input._name)
-    # output_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name(model.output._name)
-    # converter = tf.lite.TFLiteConverter.from_session(tf_session, [input_tensor], [output_tensor])
-    # converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    #
-    # def representative_dataset_gen():
-    #     for image_path in images_list_train:
-    #         im = read_yolo_image(image_path, input_shape)
-    #         im = im.reshape((1,) + im.shape)
-    #         yield [im]
-    #
-    # converter.representative_dataset = representative_dataset_gen
-    # tflite_model = converter.convert()
-    # open("model.tflite", "wb").write(tflite_model)
 
 
 if __name__ == '__main__':
