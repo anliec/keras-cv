@@ -124,8 +124,9 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
 
     # generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
 
-    if os.path.isfile("data.json"):
-        with open("data.json", 'r') as j:
+    if data_path[-5:] == ".json":
+        # if model is provided data must be too
+        with open(data_path, 'r') as j:
             data = json.load(j)
         images_list_train = data["train"]
         images_list_test = data["val"]
