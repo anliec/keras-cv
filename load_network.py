@@ -41,7 +41,7 @@ class_count = 1  # excluding background (doesn't properly update hand crafted we
 
 def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = "all",
                  layers_filters: tuple = (16, 16, 24, 32), expansions: tuple = (1, 6, 6), print_summary=True,
-                 use_resnet=False, use_mobile_net=False):
+                 use_resnet=False, use_mobile_net=False, use_additional_output=False):
     height, width = size_value
 
     ####################################
@@ -50,9 +50,12 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
 
     squares = []
     prediction_shapes = []
-    sizes = [6, 10, 15, 24, 42]  # optimised for curve signs
+    sizes = [6, 10, 15, 24, 42, 78]  # optimised for curve signs
     sizes = [int(s / 220 * height) for s in sizes]  # for smaller input size (than 220, 400)
     alpha = 1.0
+
+    if not use_additional_output:
+        sizes = sizes[:5]
 
     dropout_all = dropout_rate if dropout_strategy == "all" else None
     dropout_end = dropout_rate if dropout_strategy != "all" else None
@@ -79,6 +82,20 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     if dropout_end is not None:
         x = Dropout(dropout_end, name='part1_dropout')(x)
 
+    if use_additional_output:
+        # out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
+        #                           force_output_filter_count=True)
+        out = Conv2D(filters=class_count + 1,
+                     kernel_size=3,
+                     strides=1,
+                     padding='same',
+                     activation='linear',
+                     use_bias=True,
+                     kernel_regularizer=l2(0.01),
+                     name="output_0")(x)
+        out = Softmax(axis=3, name="output_0_softmax")(out)
+        squares.append(out)
+        prediction_shapes.append(np.array(out.shape[1:3]))
     # out = _inverted_res_block(x, filters=class_count + 1, alpha=alpha, stride=1, expansion=1, block_id=10,
     #                           force_output_filter_count=True)
     out = Conv2D(filters=class_count + 1,
