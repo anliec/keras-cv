@@ -97,8 +97,23 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
         r[:, :, 0] = 1.0
 
 
-def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01, base_weight=None, sav_dir="backup"):
+def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01, base_weight=None, sav_dir="backup",
+          filters=None, block_type="resnet"):
     os.makedirs(sav_dir)
+    if filters is None:
+        filters = (16, 16, 24, 24)
+    if block_type == "resnet":
+        use_mobile_net = False
+        use_resnet = True
+    elif block_type == "conv":
+        use_mobile_net = False
+        use_resnet = False
+    elif block_type == "mobilenet":
+        use_mobile_net = True
+        use_resnet = True
+    else:
+        raise ValueError("Unknown block {}".format(block_type))
+
     # setup tensorflow backend (prevent "Blas SGEMM launch failed" error)
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
@@ -107,8 +122,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
     config = {"size_value": [110, 200], "dropout_rate": 0.0, "dropout_strategy": "all",
-              "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6), 'use_mobile_net': False,
-              "use_resnet": True, "use_additional_output": True}
+              "layers_filters": filters, "expansions": (1, 6, 6), 'use_mobile_net': use_mobile_net,
+              "use_resnet": use_resnet, "use_additional_output": False}
 
     # save config
     with open(os.path.join(sav_dir, "config.json"), 'w') as c:
@@ -284,7 +299,19 @@ if __name__ == '__main__':
                         type=str,
                         default="backup",
                         dest="backup")
+    parser.add_argument('-f', '--filters-count',
+                        required=False,
+                        type=int,
+                        nargs=4,
+                        default=(16, 16, 24, 24),
+                        dest="filters")
+    parser.add_argument('-t', '--block-type',
+                        required=False,
+                        type=str,
+                        choices=["resnet", "conv", "mobilenet"],
+                        default="resnet",
+                        dest="block_type")
     args = parser.parse_args()
 
-    train(args.data_path, args.batch, args.epoch, args.lr, args.weights, args.backup)
+    train(args.data_path, args.batch, args.epoch, args.lr, args.weights, args.backup, args.filters, args.block_type)
 
