@@ -97,7 +97,8 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
         r[:, :, 0] = 1.0
 
 
-def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01, base_weight=None):
+def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.01, base_weight=None, sav_dir="backup"):
+    os.makedirs(sav_dir)
     # setup tensorflow backend (prevent "Blas SGEMM launch failed" error)
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
@@ -110,7 +111,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
               "use_resnet": True, "use_additional_output": True}
 
     # save config
-    with open("config.json", 'w') as c:
+    with open(os.path.join(sav_dir, "config.json"), 'w') as c:
         json.dump(config, c)
 
     # [451, 579]
@@ -175,13 +176,13 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
                                   use_multiprocessing=False,
                                   callbacks=[map_callback, tensorboard_callback])
 
-    model.save("model.h5")
+    model.save(os.path.join(sav_dir, "model.h5"))
 
-    plot_history(history, "nNet")
+    plot_history(history, os.path.join(sav_dir, "nNet"))
 
     detection_processor = DetectionProcessor(sizes=sizes, shapes=shapes, image_size=input_shape, threshold=0.5,
                                              nms_threshold=0.3)
-    out_dir = "debug/"
+    out_dir = os.path.join(sav_dir, "debug")
     if os.path.isdir(out_dir):
         shutil.rmtree(out_dir, ignore_errors=True)
     os.makedirs(out_dir, exist_ok=True)
@@ -228,7 +229,7 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     print("Fastest: {:.4f}s  {:.2f} fps".format(min(durations), 1/min(durations)))
     print("Slowest: {:.4f}s  {:.2f} fps".format(max(durations), 1/max(durations)))
 
-    with open("results.json", 'w') as f:
+    with open(os.path.join(sav_dir, "results.json"), 'w') as f:
         json.dump({"config": config,
                    "nn_fps": 1 / np.mean(durations),
                    "prediction_count": prediction_count,
@@ -278,7 +279,12 @@ if __name__ == '__main__':
                         type=str,
                         default=None,
                         dest="weights")
+    parser.add_argument('-p', '--backup-path',
+                        required=False,
+                        type=str,
+                        default="backup",
+                        dest="backup")
     args = parser.parse_args()
 
-    train(args.data_path, args.batch, args.epoch, args.lr, args.weights)
+    train(args.data_path, args.batch, args.epoch, args.lr, args.weights, args.backup)
 
