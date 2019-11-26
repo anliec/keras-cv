@@ -11,7 +11,7 @@ sns.set()
 
 
 if __name__ == '__main__':
-    additional_config = {"Conv": {"use_resnet": False, "use_mobile_net": False},
+    additional_config = {  # "Conv": {"use_resnet": False, "use_mobile_net": False},
                          "Residual": {"use_resnet": True, "use_mobile_net": False},
                          "Inverted residual bottleneck": {"use_resnet": False, "use_mobile_net": True}}
     results = {}
@@ -23,17 +23,17 @@ if __name__ == '__main__':
     output, error = process.communicate()
     print("Binary Pushed to Device!")
 
-    if os.path.isfile("speed_results_filters_and.json"):
-        with open("speed_results_filters_and.json", 'r') as j:
+    if os.path.isfile("speed_results_filters_and_filter_list.json"):
+        with open("speed_results_filters_and_filter_list.json", 'r') as j:
             results = json.load(j)
     else:
-        filters = []
-        for a in range(8, 33, 8):
-            filters.append((a, a, a, a))
-            # for b in range(a, 33, 8):
-            #     for c in range(b, 33, 8):
-            #         for d in range(c, 33, 8):
-            #             filters.append((a, b, c, d))
+        filters = [(8, 8, 16, 16), (16, 16, 24, 24), (32, 32, 64, 64)]
+        # for a in range(8, 33, 8):
+        #     filters.append((a, a, a, a))
+        #     # for b in range(a, 33, 8):
+        #     #     for c in range(b, 33, 8):
+        #     #         for d in range(c, 33, 8):
+        #     #             filters.append((a, b, c, d))
         for name, ac in additional_config.items():
             vs = []
             fs = []
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 maxs.append(vals['max'])
                 avgs.append(vals['avg'])
             results[name] = (vs, fs, mins, avgs, maxs)
-        with open("speed_results_filters_and.json", 'w') as j:
+        with open("speed_results_filters_and_filter_list.json", 'w') as j:
             json.dump(results, j)
 
     for name, (vs, fs, mins, avgs, maxs) in results.items():
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     plt.ylabel("Run time (s)")
     plt.title("Evolution of the computation speed with filter count")
     plt.legend()
-    plt.savefig('graphs/speed_by_filters_and.png')
+    plt.savefig('graphs/speed_by_filters_and_filter_list.png')
     plt.show()
 
     for name, (vs, fs, mins, avgs, maxs) in results.items():
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     plt.ylabel("Frame per second (fps)")
     plt.title("Evolution of the computation speed with the filter count")
     plt.legend()
-    plt.savefig('graphs/speed_by_filters_and_fps.png')
+    plt.savefig('graphs/speed_by_filters_and_fps_filter_list.png')
     plt.show()
 
 
