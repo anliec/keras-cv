@@ -17,7 +17,7 @@ def plot_model():
     tf.compat.v1.keras.backend.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
     config = {"size_value": [110, 200], "dropout_rate": 0.1, "dropout_strategy": "all",
-              "layers_filters": (16, 16, 24, 24), "expansions": (1, 6, 6)}
+              "layers_filters": (8, 8, 16, 16), "expansions": (1, 6, 6)}
 
     model, sizes, shapes = load_network(**config)
     forward_offset = 7

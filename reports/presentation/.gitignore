@@ -1,0 +1,10 @@
+*
+
+!*/
+!figures/*
+!*.png
+!*.jpg
+!*.mov
+!*.tex
+!*.bib
+!.gitignore

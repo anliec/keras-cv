@@ -16,6 +16,12 @@ RGB_AVERAGE = np.array([100.27196761, 117.94775357, 130.05339633], dtype=np.floa
 RGB_STD = np.array([36.48646844, 27.12285032, 27.58063623], dtype=np.float32)
 
 
+"""
+A set og function that load Yolo like annotations and make them available for training.
+Main entry point: YoloDataLoader
+"""
+
+
 def read_yolo_image(image_path: str, image_shape, normalize: bool = True):
     im = cv2.imread(image_path)
     im = cv2.resize(im, image_shape[::-1])

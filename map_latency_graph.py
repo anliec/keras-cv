@@ -3,8 +3,12 @@ import seaborn as sns
 
 sns.set()
 
+"""
+A script that generate graph and tables for the reports from values get from trainings.
+"""
+
 data = {
-    "yolo-tiny": [
+    "Yolov3-tiny": [
         {
             "comment": "Tiny Yolo at 704x416",
             "mAP": {50: 0.92, 25: 0.97},
@@ -17,10 +21,18 @@ data = {
             "comment": "Tiny Yolo at 160x288",
             "mAP": {50: 0.7681, 25: 0.934},
             "avg_latency": 0.251755
+        }, {
+            "comment": "Tiny Yolo at 96x160",
+            "mAP": {50: 0.39, 25: 0.7026},
+            "avg_latency": 0.0783643
         }
     ],
     "Residual convolution": [
         {
+            "comment": "filters: (6,10)",
+            "mAP": {50: 0.4788, 25: 0.5884},
+            "avg_latency": 8796.85e-6
+        }, {
             "comment": "filters: (8,16)",
             "mAP": {50: 0.55, 25: 0.68},
             "avg_latency": 0.0112777
@@ -80,9 +92,25 @@ def plot_fps(th=25):
     plt.show()
 
 
+def generate_table():
+    for model_type, d in data.items():
+        first_col = "\\multirow{{ {} }}{{*}}{{ {} }}".format(len(d), model_type)
+        for value in d:
+            print("\t{} & {} & {:.2f} & {:.2f} & {:.3f} & {:.1f} \\\\".format(first_col,
+                                                                              value["comment"],
+                                                                              value['mAP'][50],
+                                                                              value['mAP'][25],
+                                                                              value['avg_latency'],
+                                                                              1 / value['avg_latency'])
+                  )
+            first_col = " "
+        print("\t\\hline")
+
+
 if __name__ == '__main__':
     plot(50)
     plot(25)
     plot_fps(50)
     plot_fps(25)
+    generate_table()
 

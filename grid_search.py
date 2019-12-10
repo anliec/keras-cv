@@ -8,7 +8,7 @@ import multiprocessing
 from time import time
 from load_yolo_data import list_data_from_dir, YoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
 from load_network import load_network
-from callback import MAP_eval
+from callback import MAPEval
 from loss import SSDLikeLoss
 from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
 
@@ -22,6 +22,8 @@ import seaborn as sns
 matplotlib.use('Agg')
 sns.set()
 
+# Dictionary of the combination to explore, each key is a parameter of load_network function, the value is the
+# list of all the value to try for it.
 # over fitting test
 TO_EXPLORE = {
     "dropout_rate": [0.0],
@@ -31,13 +33,6 @@ TO_EXPLORE = {
     "use_resnet": [True],
     "use_mobile_net": [False]
 }
-
-# TO_EXPLORE = {
-#     "dropout_rate": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-#     "dropout_strategy": ["all", "last"],
-#     "layers_filters": [(16, 16, 24, 24)],
-#     "expansions": [(1, 6, 6)]
-# }
 
 
 def generate_combinations():
@@ -59,18 +54,6 @@ def generate_combinations():
                 cur_pos[k] = 0
         else:
             break
-
-
-# from https://stackoverflow.com/questions/49525776/how-to-calculate-a-mobilenet-flops-in-keras
-# def get_flops(model):
-#     run_meta = tf.compat.v1.RunMetadata()
-#     opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-#
-#     # We use the Keras session graph in the call to the profiler.
-#     flops = tf.compat.v1.profiler.profile(graph=tf.compat.v1.keras.backend.get_session().graph,
-#                                           run_meta=run_meta, cmd='op', options=opts)
-#
-#     return flops.total_float_ops  # Prints the "flops" of the model.
 
 
 def plot_history(history, base_name=""):
@@ -250,8 +233,8 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=False,
                                                           min_delta=1e-4)
-        map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                                iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(50, epoch // 2))
+        map_callback = MAPEval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
+                               iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(50, epoch // 2))
 
         history = model.fit_generator(train_sequence, validation_data=test_sequence, epochs=epoch, shuffle=True,
                                       use_multiprocessing=False, callbacks=[map_callback])
@@ -335,7 +318,7 @@ def grid_search(data_path: str, batch_size: int = 2, epoch: int = 1, base_model_
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Explore a set of network parameters using the given parameters")
     parser.add_argument('data_path',
                         type=str,
                         help='Path to the input training data')

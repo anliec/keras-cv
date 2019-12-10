@@ -8,6 +8,19 @@ from load_network import load_network
 
 def eval_map(validation_data: YoloDataLoader, model: tf.keras.Model, processor: DetectionProcessor,
              iou_thresholds=(0.5,)):
+    """
+    Compute the mAP of the given model over the given data
+    @warning This mAP function does not handle multiple classes yet
+    @param validation_data: array of (x, y) values to use for testing
+    @param model: tf.keras model to evaluate
+    @param processor: processor that will convert the prediction of the network into bounding boxes
+    @param iou_thresholds: list of IoU threshold to use for matching boxes, mAP will be computed for all of them
+    @return: auc, last_tp, last_fp, fn_counts
+      auc: area under the curve (mAP) for all given input threshold
+      last_tp: TP count including all predicted bounding boxes for all given input threshold
+      last_fp: FP count including all predicted bounding boxes for all given input threshold
+      fn_counts: FN count including all predicted bounding boxes for all given input threshold
+    """
     fn_roi = []
     matches = []
     min_iou_th = min(iou_thresholds)
@@ -119,15 +132,18 @@ if __name__ == '__main__':
                         help='Path to the input training data')
     parser.add_argument("-m", dest='model_path',
                         required=True,
-                        type=str)
+                        type=str,
+                        help="Path to the keras h5 model to evaluate")
     parser.add_argument("-c", dest='config_path',
                         required=False,
                         default=None,
-                        type=str)
+                        type=str,
+                        help="Path to the nNet json config to use")
     parser.add_argument("-o", dest='output_path',
                         required=False,
                         default=None,
-                        type=str)
+                        type=str,
+                        help="Path to the results json file")
     parser.add_argument('-b', '--batch-size',
                         required=False,
                         type=int,
@@ -139,7 +155,8 @@ if __name__ == '__main__':
                         type=float,
                         nargs='+',
                         default=[0.5],
-                        dest="iou_thresholds")
+                        dest="iou_thresholds",
+                        help="List of IoU threshold to use for evaluation")
     args = parser.parse_args()
 
     if args.config_path is None:

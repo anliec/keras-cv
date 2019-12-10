@@ -52,9 +52,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('grid_search_dir',
-                        type=str)
+                        type=str,
+                        help="Path to the directory where grid search was run")
     parser.add_argument('figure',
-                        type=str)
+                        type=str,
+                        help="Path to the output plot image")
     args = parser.parse_args()
 
     plot_map(args.grid_search_dir, args.figure)

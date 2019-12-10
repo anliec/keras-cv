@@ -1,3 +1,9 @@
+"""
+Test a set of model parameters by loading the model with random weight, converting it to tfLite and running it
+on the computer CPU.
+Some path may need to be updated to be used on other system.
+See https://www.tensorflow.org/lite/performance/benchmarks on how to build the needed tools.
+"""
 import json
 import os
 import subprocess

@@ -11,12 +11,12 @@ class Roi(object):
         self.Y = center_pos[1] - self.H / 2
         self.c = class_name
         self.shape = shape
-        if self.X < 0:
-            self.W += self.X
-            self.X = 0
-        if self.Y < 0:
-            self.H += self.Y
-            self.Y = 0
+        # if self.X < 0:
+        #     self.W += self.X
+        #     self.X = 0
+        # if self.Y < 0:
+        #     self.H += self.Y
+        #     self.Y = 0
         self.confidence = confidence
 
     def get_overlap(self, other):
@@ -95,33 +95,10 @@ def draw_roi(img, roi_list, color=(0, 255, 0), width=4):
     return img
 
 
-def process_detection_raw(raw: np.ndarray, sizes: list, threshold: float = 0.5):
-    assert raw.shape[3] == len(sizes)
-
-    per_image_results = []
-    for det in raw:
-        results = []
-
-        while True:
-            pos = np.unravel_index(np.argmax(det), det.shape)
-            confidence = det[pos]
-            if confidence < threshold:
-                break
-            else:
-                b = Roi(confidence, pos[0:2], sizes[pos[2]])
-                b.shape = det.shape[0:2]
-                results.append(b)
-                # mask out selected box
-                det[int(b.X):int(b.X + b.W), int(b.Y):int(b.Y + b.H), :, 0] = 0.0
-        per_image_results.append(results)
-
-    if len(per_image_results) == 1:
-        return per_image_results[0]
-    else:
-        return per_image_results
-
-
 class DetectionProcessor:
+    """
+    Class that  handle the conversion from a output head of nNet into a bounding box.
+    """
     def __init__(self, sizes: list, shapes: list, image_size, threshold: float = 0.5, nms_threshold: float = 0.5):
         self.shapes = shapes
         self.sizes = sizes
@@ -138,7 +115,7 @@ class DetectionProcessor:
             i = len(sizes) // len(shapes)
             self.sizes = self.sizes[::i]
 
-    def unravel_index(self, index):
+    def _unravel_index(self, index):
         for i, v in enumerate(self.linear_index_shapes):
             if v > index:
                 shape_index = i - 1
@@ -149,23 +126,26 @@ class DetectionProcessor:
         size = self.sizes[shape_index]
         pos = np.array(np.unravel_index(linear_index_in_shape, self.shapes[shape_index]), dtype=np.float32)
         # move the pos to the center of the pixel and scale it, then move to the top left corner
-        pos = ((pos + 0.5) * (self.image_size[0] / self.shapes[shape_index][0]))
+        pos[0] = ((pos[0] + 0.5) * (self.image_size[0] / self.shapes[shape_index][0]))
+        pos[1] = ((pos[1] + 0.5) * (self.image_size[1] / self.shapes[shape_index][1]))
         return pos, size
 
-    def pos_to_roi(self, pos, conf: float):
-        coord, size = self.unravel_index(pos[0])
+    def _pos_to_roi(self, pos, conf: float):
+        coord, size = self._unravel_index(pos[0])
         return Roi(conf, coord, size, pos[1], shape=self.image_size)
 
-    def process_image_detection(self, raw: np.ndarray):
+    def _process_image_detection(self, raw: np.ndarray):
         pos = np.where(raw[:, 1:] > self.threshold)
-        prediction = [self.pos_to_roi(p, raw[p]) for p in zip(*pos)]
+        prediction = [self._pos_to_roi(p, raw[p]) for p in zip(*pos)]
         if self.nms_threshold > 1.0:
             return prediction
         else:
-            return self.non_max_suppression(prediction)
+            return self._non_max_suppression(prediction)
 
-    def non_max_suppression(self, prediction: list):
+    def _non_max_suppression(self, prediction: list):
         i1, i2 = 0, 0
+        # sort over confidence first !
+        # faster algorithm possible !
         while i1 < len(prediction):
             p1 = prediction[i1]
             i2 = i1 + 1
@@ -184,10 +164,17 @@ class DetectionProcessor:
         return prediction
 
     def process_detection(self, raw: np.ndarray, pool: multiprocessing.Pool = None):
+        """
+        Process the raw output given by nNet into actual bounding boxes
+        @param raw: Output of the nNet network
+        @param pool: multiprocessing pool to use to parallelize the process, set to None to run on current thread
+        @return: A list of list of Roi object. First list as the same number of element than raw (i.e. number of image
+        with detection) the second list is the number of detection for this output, formatted in a Roi object.
+        """
         if pool is None:
-            return [self.process_image_detection(pred) for pred in raw]
+            return [self._process_image_detection(pred) for pred in raw]
         else:
-            return [roi for roi in pool.map(self.process_image_detection, raw)]
+            return [roi for roi in pool.map(self._process_image_detection, raw)]
 
 
 

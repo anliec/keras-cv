@@ -1,24 +1,11 @@
 import numpy as np
-from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Input, MaxPool2D, Conv2D, UpSampling2D, \
     Concatenate, Maximum, Add, Activation, Lambda, BatchNormalization, Softmax, Reshape, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.activations import softmax
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 import tensorflow as tf
 
 import math
-
-# from keras import backend as K
-# from keras.layers import Input, MaxPool2D, Conv2D, UpSampling2D, \
-#     Concatenate, Maximum, Add, Activation, Lambda, BatchNormalization, Softmax, Reshape
-# from keras.models import Model
-# from keras.activations import softmax
-# from keras.applications.mobilenet_v2 import MobileNetV2
-
-
-# from utils import *
 
 angle_count = 4
 start_angle = math.pi / 4.0
@@ -30,20 +17,26 @@ square_detection_min_square_size = 3
 square_detection_max_square_size = 4
 square_detection_kernel_size = 3
 
-class_count = 1  # excluding background (doesn't properly update hand crafted weights)
-
-
-# detection_filter_filter_size = 5
-# detection_filter_dmz_size = 1
-# detection_filter_penalty = -0.1
-# score_filter_size = 5
-# size_filter_size = 5
-# scale_initial_value = 1.0
+class_count = 1  # excluding background
 
 
 def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = "all",
                  layers_filters: tuple = (16, 16, 24, 32), expansions: tuple = (1, 6, 6), print_summary=True,
                  use_resnet=False, use_mobile_net=False, use_additional_output=False):
+    """
+    Generate a tf.keras model following the given parameters.
+    @param size_value: size of the input image as a tuple (height, width)
+    @param dropout_rate: Dropout value to use
+    @param dropout_strategy: Dropout strategy, "all" to ad dropout after each layers, anything else to add dropout only
+    at the end of each block.
+    @param layers_filters: Number of filter to be used for each four big blocks
+    @param expansions: expansions value to use (only used if use_mobile_net == True)
+    @param print_summary: set to true to print model summary after loading the model
+    @param use_resnet: Set to true to use residual convolution layer (only used if use_mobile_net == False)
+    @param use_mobile_net: Set to true to use inverted residual bottleneck layer layer
+    @param use_additional_output: Set to true to use a sixth output layer.
+    @return: a tf.keras model
+    """
     height, width = size_value
 
     ####################################
@@ -188,6 +181,37 @@ def load_network(size_value, dropout_rate: float = 0.1, dropout_strategy: str = 
     return model, sizes, prediction_shapes
 
 
+def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False,
+                        use_resnet: bool = False, dropout_rate: float = None, inverted_bottle_neck=False):
+    if inverted_bottle_neck:
+        return mobilenet_inverted_res_block(inputs, expansion, stride, alpha, filters, block_id,
+                                            force_output_filter_count)
+    else:
+        return my_block(inputs, stride, filters, block_id, use_resnet, dropout_rate)
+
+
+def my_block(inputs, stride, filters, block_id, use_resnet: bool = False, dropout_rate: float = None):
+    prefix = 'block_{}_'.format(block_id)
+    x = Conv2D(filters=filters,
+               kernel_size=3,
+               strides=stride,
+               padding='same',
+               use_bias=False,
+               activation=None,
+               name='{}conv'.format(prefix),
+               kernel_regularizer=l2(0.01))(inputs)
+    x = tf.keras.layers.BatchNormalization(axis=-1,
+                                           epsilon=1e-3,
+                                           momentum=0.99,
+                                           name=prefix + 'BN')(x)
+    x = tf.keras.layers.ReLU(6., name='{}relu'.format(prefix))(x)
+    if use_resnet and tf.keras.backend.int_shape(inputs)[-1] == filters and stride == 1:
+        x = tf.keras.layers.Add(name=prefix + 'add')([inputs, x])
+    if dropout_rate is not None:
+        x = Dropout(dropout_rate, name=prefix + 'dropout')(x)
+    return x
+
+
 """
 Code from keras_application MobileNet v2: 
 https://github.com/keras-team/keras-applications/blob/71acdcd98088501247f4b514b7cbbdf8182a05a4/keras_applications/mobilenet_v2.py#L425
@@ -227,37 +251,6 @@ def correct_pad(backend, inputs, kernel_size):
 
     return ((correct[0] - adjust[0], correct[0]),
             (correct[1] - adjust[1], correct[1]))
-
-
-def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, force_output_filter_count: bool = False,
-                        use_resnet: bool = False, dropout_rate: float = None, inverted_bottle_neck=False):
-    if inverted_bottle_neck:
-        return mobilenet_inverted_res_block(inputs, expansion, stride, alpha, filters, block_id,
-                                            force_output_filter_count)
-    else:
-        return my_block(inputs, stride, filters, block_id, use_resnet, dropout_rate)
-
-
-def my_block(inputs, stride, filters, block_id, use_resnet: bool = False, dropout_rate: float = None):
-    prefix = 'block_{}_'.format(block_id)
-    x = Conv2D(filters=filters,
-               kernel_size=3,
-               strides=stride,
-               padding='same',
-               use_bias=False,
-               activation=None,
-               name='{}conv'.format(prefix),
-               kernel_regularizer=l2(0.01))(inputs)
-    x = tf.keras.layers.BatchNormalization(axis=-1,
-                                           epsilon=1e-3,
-                                           momentum=0.99,
-                                           name=prefix + 'BN')(x)
-    x = tf.keras.layers.ReLU(6., name='{}relu'.format(prefix))(x)
-    if use_resnet and tf.keras.backend.int_shape(inputs)[-1] == filters and stride == 1:
-        x = tf.keras.layers.Add(name=prefix + 'add')([inputs, x])
-    if dropout_rate is not None:
-        x = Dropout(dropout_rate, name=prefix + 'dropout')(x)
-    return x
 
 
 def mobilenet_inverted_res_block(inputs, expansion, stride, alpha, filters, block_id,

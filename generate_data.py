@@ -1,3 +1,10 @@
+"""
+A script that generate artificial data for pre-training the model.
+It use basic geometric shape that look like traffic signs to allow the network to get
+better filters on the firsts layers.
+Nicolas Six
+"""
+
 import cv2
 import os
 import numpy as np

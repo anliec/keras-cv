@@ -10,8 +10,8 @@ from time import time
 from load_yolo_data import list_data_from_dir, YoloDataLoader, read_yolo_image, RGB_AVERAGE, RGB_STD
 from load_network import load_network
 from loss import SSDLikeLoss
-from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor
-from callback import MAP_eval
+from detection_processing import process_detection, draw_roi, Roi, DetectionProcessor, rescale_roi
+from callback import MAPEval
 
 from tensorflow.python.keras.utils.vis_utils import plot_model, model_to_dot
 import tensorflow as tf
@@ -81,6 +81,9 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
     for r in raws:
         r[:, :, 0] = 1.0
 
+    pad = 0
+    padded_input_shape = input_shape[0] + 2 * pad, input_shape[1] + 2 * pad
+
     for i, r in enumerate(raws):
         r[:, :, 1] = 1.0
         r[:, :, 0] = 0.0
@@ -88,9 +91,15 @@ def generate_grid_images(shapes: list, sizes: list, class_count: int, input_shap
 
         pred_roi = detection_processor.process_detection(concat_flatten_raws.reshape((1,) + concat_flatten_raws.shape),
                                                          pool=None)
-        bb_im = np.zeros(input_shape + (3,), dtype=np.uint8) + 57
+        bb_im = np.zeros(padded_input_shape + (3,), dtype=np.uint8) + 57
+        bb_im[:pad, :, :] = 110
+        bb_im[-pad:, :, :] = 110
+        bb_im[:, :pad, :] = 110
+        bb_im[:, -pad:, :] = 110
         for roi in pred_roi[0]:
-            bb_im = draw_roi(bb_im, [roi], width=1, color=random_color())
+            roi.X += pad
+            roi.Y += pad
+            bb_im = cv2.rectangle(bb_im, roi.up_left_corner(), roi.down_right_corner(), random_color(), 1)
         bb_im = cv2.cvtColor(bb_im, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, "boxes_layers_{}.png".format(i)), bb_im)
         r[:, :, 1] = 0.0
@@ -138,7 +147,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
     if base_weight is not None:
         model.load_weights(base_weight)
 
-    # generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
+    generate_grid_images(shapes, sizes, class_count=2, input_shape=input_shape, out_dir=".")
+    return
 
     if data_path[-5:] == ".json":
         # if model is provided data must be too
@@ -181,8 +191,8 @@ def train(data_path: str, batch_size: int = 2, epoch: int = 1, learning_rate=0.0
                                    pyramid_size_list=sizes, disable_augmentation=True)
     # test_sequence.preload_data()
 
-    map_callback = MAP_eval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
-                            iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(epoch//2, 25))
+    map_callback = MAPEval(test_sequence, sizes, shapes, input_shape, detection_threshold=0.5, mns_threshold=0.3,
+                           iou_thresholds=(0.25, 0.5, 0.75), frequency=10, epoch_start=min(epoch//2, 25))
     # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=60, restore_best_weights=True)
     log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
@@ -288,29 +298,34 @@ if __name__ == '__main__':
                         required=False,
                         type=float,
                         default=0.01,
-                        dest="lr")
+                        dest="lr",
+                        help="Learning rate to use when training start")
     parser.add_argument('-m', '--base-weights',
                         required=False,
                         type=str,
                         default=None,
-                        dest="weights")
+                        dest="weights",
+                        help="Path to weight to load to initialise ")
     parser.add_argument('-p', '--backup-path',
                         required=False,
                         type=str,
                         default="backup",
-                        dest="backup")
+                        dest="backup",
+                        help="Path to the backup folder where weights and training data will be saved")
     parser.add_argument('-f', '--filters-count',
                         required=False,
                         type=int,
                         nargs=4,
                         default=(16, 16, 24, 24),
-                        dest="filters")
+                        dest="filters",
+                        help="Filters used by the network")
     parser.add_argument('-t', '--block-type',
                         required=False,
                         type=str,
                         choices=["resnet", "conv", "mobilenet"],
                         default="resnet",
-                        dest="block_type")
+                        dest="block_type",
+                        help="Type of block used for each layer")
     args = parser.parse_args()
 
     train(args.data_path, args.batch, args.epoch, args.lr, args.weights, args.backup, args.filters, args.block_type)

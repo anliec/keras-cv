@@ -1,0 +1,12 @@
+\chapter{Conclusion}
+
+\paragraph{}
+In this work we propose a new architecture to detect traffic signs in real time on mobile devices. This architecture is based on a new low localization accuracy head, allowing to simplify the task of object detection and making it possible to reduce the backend network to its core.
+
+This proposed architecture reaches a prediction speed of 88fps on a smartphone (Samsung S6, SM-G920T), while maintaining a mAP@50 of 55\%, and a mAP@25 of 68\% on our data. While a mAP@50 over 95\% can be reached by model like Yolov3, such level of accuracy needs models that use much larger backend that allow them to run real time on big GPU, but is impossible to run on a mobile device.
+
+To achieve these results we also propose a simple way to generate training data, using simple geometric shapes to help the network understand what is expected on the task and better utilize the real data.
+
+\paragraph{}
+To the best of our knowledge, this work improves the speed of traffic sign detection on a mobile device by more than a factor of 10 and opens the possibility of large range of mobile, real time applications.
+

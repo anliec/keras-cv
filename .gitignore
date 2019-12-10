@@ -1,5 +1,18 @@
 .idea/
 
+*
+
+!*/
+
+!*.py
+!.gitignore
+!*.c
+!*.so
+!*.ipynb
+!*.md
+
+
+.ipynb_checkpoints/
 
 
 

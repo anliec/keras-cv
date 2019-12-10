@@ -1,0 +1,1060 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beamer Presentation
+% LaTeX Template
+% Version 1.0 (10/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass{beamer}
+
+% \mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+% \usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+%\usecolortheme{albatross}
+% \usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+%\usecolortheme{seagull}
+% \usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+% \setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+
+\addtobeamertemplate{navigation symbols}{}{%
+    \usebeamerfont{footline}%
+    \usebeamercolor[fg]{footline}%
+    \hspace{1em}%
+    \insertframenumber/\inserttotalframenumber
+}
+
+% \setbeamertemplate{navigation symbols}{\tiny\insertframenumber}
+% \setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+% }
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+%\usepackage {tikz}
+% \usepackage{tkz-graph}
+% \GraphInit[vstyle = Shade]
+% \tikzset{
+%   LabelStyle/.style = { rectangle, rounded corners, draw,
+%                         minimum width = 2em, fill = yellow!50,
+%                         text = red, font = \bfseries },
+%   VertexStyle/.append style = { inner sep=5pt,
+%                                 font = \normalsize\bfseries},
+%   EdgeStyle/.append style = {->, bend left} }
+% \usetikzlibrary {positioning}
+%\usepackage {xcolor}
+% \definecolor {processblue}{cmyk}{0.96,0,0,0}
+
+\AtBeginSection[]
+  {
+     \begin{frame}<beamer>
+    %  \frametitle{Plan}
+     \tableofcontents[currentsection]
+     \end{frame}
+  }
+
+\usepackage{subcaption}
+\usepackage{multimedia}
+\usepackage{dcolumn}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\newcommand{\backupbegin}{
+   \newcounter{framenumberappendix}
+   \setcounter{framenumberappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+   \addtocounter{framenumberappendix}{-\value{framenumber}}
+   \addtocounter{framenumber}{\value{framenumberappendix}} 
+}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[Traffic sign detection on smartphone]{Real time detection of traffic signs on mobile device} % The short title appears at the bottom of every slide, the full title is only on the title page
+
+\author{Nicolas \textsc{Six}} % Your name
+\institute[Georgia Institute of Technology] % Your institution as it will appear on the bottom of every slide, may be shorthand to save space
+{
+Georgia Institute of Technology\\% Your institution for the title page
+School of Computer Science
+\medskip
+}
+\date{December $3^{rd}$, 2019} % Date, can be changed to a custom date
+
+\begin{document}
+
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+\begin{frame}{Acknowledgments}
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.3\linewidth}
+          \centering
+          \includegraphics[height=1.2\linewidth]{figures/comettee/zsoltkira.jpg}
+          Dr. Zsolt \textsc{Kira}
+        \end{subfigure}
+        \begin{subfigure}[t]{.3\linewidth}
+          \centering
+          \includegraphics[height=1.2\linewidth]{figures/comettee/tsai_yichang_james.jpg}
+          Professor Yi-Chang James \textsc{Tsai}
+        \end{subfigure}
+        \begin{subfigure}[t]{.3\linewidth}
+          \centering
+          \includegraphics[height=1.2\linewidth]{figures/comettee/zhahoua_wang.jpg}
+          Dr. Zhaohua \textsc{Wang}
+        \end{subfigure}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}
+\frametitle{Overview} % Table of contents slide, comment this block out to remove it
+\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+%------------------------------------------------
+
+\section{Problem statement}
+\begin{frame}{Traffic sign detection}
+    % what and who cares
+    \begin{figure}
+        \centering
+        \includegraphics[width=.95\linewidth]{figures/yolo_detection_example.png}
+        \caption{Example of detection, from Yolo v3, classification with MobileNet.}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Current procedure}
+    % collect and then process -> heavy data load and delays
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/self_made/current.png}
+        \caption{Current procedure for automatic inventory of traffic signs}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Proposed procedure}
+    % can we do the same on smartphone ?
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.4\linewidth]{figures/self_made/proposed.png}
+        \caption{Target procedure for automatic inventory of traffic signs}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{On device processing}
+    % so how do they do for autonomous driving ? -> Tesla GPU (25% of car consumption at 20km/h)
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.7\linewidth]{figures/tesla-ship.jpg}
+        \caption{Tesla new chip for autonomous driving, consuming 72W and providing 144 TOPS}
+    \end{figure}{}
+\end{frame}{}
+
+\section{Background}
+\begin{frame}{Historical traffic sign detection}
+    % put some image of old papers about traffic sign detection
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.48\linewidth}
+          \centering
+          \includegraphics[width=.9\linewidth]{figures/1993trafficsigndetection.png}
+          \caption{Hybrid processing to traffic sign detection proposed by Ruud Janssen, W. Ritter in 1993 \cite{janssen1993hybrid}}
+        \end{subfigure}
+        \begin{subfigure}[t]{.48\linewidth}
+          \centering
+          \includegraphics[width=.9\linewidth]{figures/vita2.png}
+          \caption{Vita-II autonomous vehicle in 1994 \cite{ulmer1994vita}}
+          \label{fig:resblock}
+        \end{subfigure}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{Generic object detection}
+    % deep learning: very good results on complex task, better than human, but need powerful computer to fast.
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/YOLOv3_example.png}
+        \caption{Example of detection done by Yolo v3 \cite{yolov3} after training on MS COCO \cite{mscoco}}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Example: SSD}
+    % quick description of how SSD works.
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/ssd.jpg}
+        \caption{Schematic explanation of how the SSD head work \cite{liu2016ssd}}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Anchors}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.7\linewidth]{figures/anchors.png}
+        \caption{Visual description of an anchor}
+    \end{figure}{}
+\end{frame}{}
+
+% \begin{frame}{Generic object detection on smartphone}
+%     % mobile net SSD, frame rate...
+%     \begin{figure}
+%         \centering
+%         \includegraphics[width=0.5\linewidth]{figures/mobilnetv3_speed.png}
+%         \caption{Speed and accuracy of Mobilenet V3 for object detection }
+%         \label{fig:my_label}
+%     \end{figure}{}
+% \end{frame}{}
+
+
+
+\section{Data}
+\begin{frame}{Real data}
+    % example, diversity, quantity...
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.7\linewidth]{figures/example_clear_image.jpg}
+        \caption{Example of a clear image from the dataset}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Real data}
+    % example, diversity, quantity...
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.9\linewidth]{figures/example_bad_image.jpg}
+        \caption{Example of a smartphone collected image from the dataset}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Artificial data}
+    % why? why not training on classical classification tasks?
+    % example, count, how is it generated
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.9\linewidth]{figures/fake_data_ex.jpg}
+        \caption{Example of artificially generated data}
+        \label{fig:fake_im_ex}
+    \end{figure}{}
+\end{frame}{}
+
+
+
+
+
+\section{Technical approach}
+\subsection{Assumptions}
+% add slide in between showing what each assumption imply? or after?
+\begin{frame}{Aspect ratio}
+    % why we can say that
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.9\linewidth]{figures/classes_diamond_nocount.jpg}
+        \caption{Example of sign randomly sampled from our dataset, one example per class.}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Position and size accuracy}
+    % do we really care about pixel accurate position?
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/bad_box_example.png}
+        \caption{Example of not perfectly accurate detection boxes}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Task complexity}
+    % hey, did you realize that traffic sign are made to be detected? :P
+    % difficult: https://farm6.staticflickr.com/5348/9675514309_de6948e5b3_z.jpg
+    % src: http://cocodataset.org/#explore?id=539481
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/difficult_detection.jpg}
+        \caption{Example of image with an owl, from MS COCO dataset \cite{mscoco}}
+    \end{figure}{}
+\end{frame}{}
+
+\subsection{Assumption implementation}
+\begin{frame}{Assumption implementation}
+    % predict one value -> size
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.5\linewidth]{figures/anchors.png}
+        % \caption{Visual description of an anchor}
+    \end{figure}{}
+    \begin{itemize}
+        \item Set $t_w = t_h \onslide<3->{=0}$ \pause
+        \item Set $t_x = t_y = 0 \Leftrightarrow b_x = c_x + 0.5 \text{ and } b_y = c_y + 0.5$
+    \end{itemize}{}
+\end{frame}{}
+
+\subsection{Structure chosen}
+\begin{frame}{Structure chosen}
+    % based on Mobile net first block (inspiration from what works...)
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.9\linewidth]{figures/my_arch.pdf}
+        \caption{Final architecture chosen, based on MobileNet v2 first block}
+    \end{figure}{}
+\end{frame}{}
+
+
+
+
+\section{Results}
+\begin{frame}{Using the artificial data}
+    % table of scores comparing architectures
+    \begin{table}[]
+    \centering
+    \tiny
+    \begin{tabular}{|c|c|c|c|c|c|c|c|}
+        \hline
+        \multirow{3}{*}{Block type} & \multirow{3}{*}{Filters} & \multicolumn{4}{|c|}{mAP} & \multicolumn{2}{|c|}{\multirow{2}{*}{Improvement}} \\
+        & & \multicolumn{2}{|c|}{Direct Training} & \multicolumn{2}{|c|}{Fine tuning} & \multicolumn{2}{|c|}{}\\ 
+        & & @25 & @50 & @25 & @50 & @25 & @50 \\ \hline
+        \multirow{3}{*}{Residual} & $(8,16)$   & $0.58$ & $0.45$ & $0.68$ & $0.55$ & $+17.2\%$ &                               $+22.2\%$ \\
+                                  & $(16,24)$ & $0.00$ & $0.00$ & $0.73$ & $0.61$ & $+\infty$ & $+\infty$ \\
+                                  & $(32,64)$ & $0.62$ & $0.52$ & $0.82$ & $0.67$ & $+32.3\%$ & $+28.8\%$ \\ \hline
+        Inverted Residual         & $(8,16)$   & $0.49$ & $0.38$ & $0.43$ & $0.30$ & $-12.24\%$ &                               $-21.05\%$\\ \hline
+    \end{tabular}
+    \caption{Summary of the evolution of the mAP with and without fine turning}
+    \label{tab:mapFineTuning}
+\end{table}
+\end{frame}{}
+
+\begin{frame}{Latency study}
+    % show map graph with comparison with Yolo and table ?
+    \begin{figure}
+      \begin{center}
+        % \begin{subfigure}[t]{.49\linewidth}
+        %   \centering
+        %   \includegraphics[width=0.99\linewidth]{figures/map_at_50_latency_models.png}
+        %   \caption{Evolution of the mAP@50 with the latency}
+        % \end{subfigure}
+        % \begin{subfigure}[t]{.49\linewidth}
+        %   \centering
+        %   \includegraphics[width=0.99\linewidth]{figures/map_at_50_fps_models.png}
+        %   \caption{Evolution of the mAP@50 with the frame per second}
+        % \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/map_at_25_latency_models.png}
+          \caption{Evolution of the mAP@25 with the latency}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/map_at_25_fps_models.png}
+          \caption{Evolution of the mAP@25 with the frame per second}
+        \end{subfigure}
+        \caption{Plots of the ratio computation speed vs accuracy for different architectures}
+        \label{fig:map_to_speed}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+
+
+\section{Validation}
+\begin{frame}{West Westley}
+    % describe ww, what is interesting or not
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\linewidth]{figures/westwestleymap.png}
+        \caption{Map of the West Westley test road}
+        \label{fig:wwmap}
+    \end{figure}{}
+    \small
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|c|c|}
+            \hline
+            Frame count & Sign count & TP & FP & FN & Precision & Recall \\ \hline
+            $22,198$ & $34$ & $31$ & $10$ & $3$ & $76\%$ & $91\%$ \\ \hline
+        \end{tabular}
+        % \caption{Quantitative results for the test on West Westley. The numbers are given based on individual signs or object detected not on frame with detection.}
+        \label{tab:ww_numbers}
+    \end{table}{}
+\end{frame}{}
+
+\begin{frame}{West Wesley False Positive cases}
+    % list some meaning full examples
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FP/FP02.jpg}
+          \caption{Small yellow flag}
+          \label{fig:wwFlag1FP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FP/FP05.jpg}
+          \caption{School Sign (MUTCD: S1-1)}
+          \label{fig:wwSchoolFP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FP/FP07.jpg}
+          \caption{Chevron sign}
+          \label{fig:wwChevron2FP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FP/FP09.png}
+           \caption{Back of traffic light}
+          \label{fig:wwTraffficLight2FP}
+        \end{subfigure}
+        % \caption{Example of false positive cases collected on West Westley.}
+        \label{fig:wwFPcases}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{West Wesley False Negative cases}
+    % list some meaning full examples
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FN/FN01.jpg}
+          \caption{Whitened sign}
+          \label{fig:wwWhiteFN}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FN/FN02.jpg}
+          \caption{Dirty, faded sign in the shadow}
+          \label{fig:wwFaddedFN}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/FN/FN03.png}
+         \caption{Small often obstructed sign}
+          \label{fig:wwobsFN}
+        \end{subfigure}
+        % \caption{Example of false negative cases collected on West Westley.}
+        \label{fig:wwFNcases}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{West Wesley True Positive example}
+    % interesting examples
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/TP/TP04.jpg}
+          \caption{Obstructed sign}
+          \label{fig:wwObs1TP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/TP/TP02.jpg}
+          \caption{Obstructed sign}
+          \label{fig:wwObs2TP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/westwestley/TP/TP05.png}
+          \caption{Obstructed sign}
+          \label{fig:wwObs3TP}
+        \end{subfigure}
+        % \caption{Example of true positive cases collected on West Westley.}
+        \label{fig:wwTPcases}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+
+
+
+\section{Conclusion}
+\begin{frame}{Wrap up}
+    Assumptions:
+    \begin{itemize}
+        \item Low position accuracy $\checkmark$
+        \item Small backbone $\checkmark$
+    \end{itemize}{}
+\end{frame}{}
+
+\begin{frame}{Future work}
+    \begin{itemize}
+        \item Implement and deploy android / iOS app \pause
+        \item Experiment with higher position accuracy \pause
+        \item Try full model quantification \pause
+        \item Try on other signs
+        % \item Explain why inverted residual bottleneck is not working
+    \end{itemize}{}
+\end{frame}{}
+
+\begin{frame}{Contributions}
+    % give / show the numbers
+    % data generation
+    \begin{figure}
+      \begin{center}
+        % \begin{subfigure}[t]{.49\linewidth}
+        %   \centering
+        %   \includegraphics[width=0.99\linewidth]{figures/map_at_50_latency_models.png}
+        %   \caption{Evolution of the mAP@50 with the latency}
+        % \end{subfigure}
+        % \begin{subfigure}[t]{.49\linewidth}
+        %   \centering
+        %   \includegraphics[width=0.99\linewidth]{figures/map_at_50_fps_models.png}
+        %   \caption{Evolution of the mAP@50 with the frame per second}
+        % \end{subfigure}
+        \begin{subfigure}[t]{.45\linewidth}
+          \centering
+          \includegraphics[width=0.7\linewidth]{figures/map_at_25_latency_models.png}
+        %   \caption{Evolution of the mAP@25 with the latency}
+        \end{subfigure}
+        \begin{subfigure}[t]{.45\linewidth}
+          \centering
+          \includegraphics[width=0.7\linewidth]{figures/map_at_25_fps_models.png}
+        %   \caption{Evolution of the mAP@25 with the frame per second}
+        \end{subfigure}
+        % \caption{Plots of the ratio computation speed vs accuracy for different architectures}
+        \label{fig:map_to_speed}
+      \end{center}
+    \end{figure}
+    \begin{itemize}
+        \item Accurate detection of traffic sign on mobile device at above real time speed
+        \item New artificial data generation method for pretraining
+    \end{itemize}{}
+\end{frame}{}
+
+\begin{frame}{}
+    \centering
+    \Large{Questions?}
+\end{frame}{}
+
+
+
+
+\appendix
+\backupbegin
+
+
+
+
+
+% appendix ?
+\begin{frame}{References}
+    \tiny
+    \bibliographystyle{plain}
+    \bibliography{references} 
+\end{frame}{}
+
+
+
+
+
+
+
+
+
+\begin{frame}{mAP vs speed numbers}
+    \tiny
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|c|r|}
+            \hline
+            Architecture & Input size & Filters & mAP@50 & mAP@25 & Latency (s) & FPS \\ \hline
+            \multirow{ 4 }{*}{ Yolov3-tiny } & 704x416 & - & 0.92 & 0.97 & 1.738 & 0.6 \\
+        	  & 576x320 & - & 0.96 & 0.98 & 1.075 & 0.9 \\
+        	  & 160x288 & - & 0.77 & 0.93 & 0.252 & 4.0 \\
+        	  & 96x160  & - & 0.39 & 0.70 & 0.078 & 12.8 \\
+        	\hline
+        	\multirow{ 4 }{*}{ \shortstack{Residual\\convolution} } & 110x200 & (6,10) & 0.48 & 0.59 & 0.009 & 113.7 \\
+        	  & 110x200 & (8,16) & 0.55 & 0.68 & 0.011 & 88.7 \\
+        	  & 110x200 & (16,24) & 0.61 & 0.73 & 0.020 & 48.9 \\
+        	  & 110x200 & (32,64) & 0.67 & 0.82 & 0.068 & 14.8 \\
+        	\hline
+        	Inverted & & & & & & \\
+        	residual & 110x200 & (8,16) & 0.38 & 0.49 & 0.025 & 39.4 \\
+        	bottleneck & & & & & & \\
+        	\hline
+        \end{tabular}
+        \caption{Value of the mAP, latency and frame per second for different configuration and different models}
+        \label{tab:map_to_speed}
+    \end{table}{}
+\end{frame}{}
+
+\begin{frame}{A feature extractor}
+    % example of classification
+    \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth]{figures/vgg16.pdf}
+        \caption{Example of the VGG16 architecture, on a classification task}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{Doing it manually}
+    % how would I do if I was a CNN?
+    % display filters for edges, propagation...
+    % example images of detection?
+  \begin{columns}
+  \begin{column}{0.15\textwidth}
+    \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth]{figures/manual_filters/base_image.jpg}
+        \caption{Original Image}
+    \end{figure}{}
+  \end{column}
+  \begin{column}{0.85\textwidth}
+  \begin{figure}
+      \centering
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_1.png}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_3.png}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_5.png}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_7.png}
+      \end{subfigure}
+      
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_res_1.png}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_res_3.png}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_res_5.png}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.22\textwidth}
+          \includegraphics[width=\textwidth]{figures/manual_filters/edge_res_7.png}
+      \end{subfigure}
+      \caption{Edge detector convolution filters and results.}
+    \end{figure}
+  \end{column}
+  \end{columns}
+\end{frame}{}
+
+\begin{frame}{Doing it manually}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/manual_filters/ex_im.jpg}
+        \caption{Example of detection of a manually made model after training}
+    \end{figure}{}
+\end{frame}{}
+
+
+\begin{frame}{Different blocks}
+    % conv / res / residual inverted bottleneck, comparison perf/accuracy
+    \begin{figure}
+  \begin{center}
+    \begin{subfigure}[t]{.24\linewidth}
+      \centering
+      \includegraphics[width=.8\linewidth]{figures/mobilenetv2_conv.png}
+      \caption{2D Convolution block}
+      \label{fig:convblock}
+    \end{subfigure}
+    \begin{subfigure}[t]{.24\linewidth}
+      \centering
+      \includegraphics[width=.8\linewidth]{figures/mobilenetv2_resnet.png}
+      \caption{Residual convolution block}
+      \label{fig:resblock}
+    \end{subfigure}
+    \begin{subfigure}[t]{.5\linewidth}
+      \centering
+      \includegraphics[width=.99\linewidth]{figures/mobilenetv2_inverted_residual_botleneck.png}
+      \caption{Inverted residual block \cite{sandler2018mobilenetv2}}
+      \label{fig:invertedbottleneckblock}
+    \end{subfigure}
+    \caption{Graphical representation of the different block used in this study, Illustrations from MobileNet V2 paper \cite{sandler2018mobilenetv2}}
+  \end{center}
+\end{figure}
+\end{frame}{}
+
+\begin{frame}{About input size}
+    % example of input size image
+    \begin{figure}
+  \begin{center}
+    \begin{subfigure}[t]{.4\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/im_example_full.jpg}
+      \caption{$1080\times1920$}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/im_example_440x800.jpg}
+      \caption{$440\times800$}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/im_example_220x400.jpg}
+      \caption{$220\times400$}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/im_example_110x200.jpg}
+      \caption{$110\times200$}
+    \end{subfigure}
+    \caption{Example of an image resized at different size and displayed at same size}
+    \label{resizeExample}
+  \end{center}
+\end{figure}
+\end{frame}{}
+
+\begin{frame}{Input size and speed}
+    % graph of input size vs speed
+    \begin{figure}
+  \begin{center}
+    \begin{subfigure}[t]{.49\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/speed_by_nn_size_and.png}
+      \caption{Latency evolution with input size}
+      \label{fig:latencysize}
+    \end{subfigure}
+    \begin{subfigure}[t]{.49\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/speed_by_nn_size_fps_and.png}
+      \caption{FPS evolution with input size}
+      \label{fig:fpssize}
+    \end{subfigure}
+    \caption{Evolution of the prediction speed for different block type, using Tensorflow Lite version of the model on Samsung S6}
+    \label{resizeExample}
+  \end{center}
+\end{figure}
+\end{frame}{}
+
+
+\begin{frame}{Neural network structure}
+    \begin{table}[]
+        \tiny
+        \centering
+        \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+        \hline
+        Name & Filter & Kernel & Stride & Activation & BN & Res & Input size & Input \\ \hline
+        Conv1 & $8$ & $(3, 3)$ & $(2, 2)$ & ReLu6 & \checkmark &  & $(111, 201, 3)$ &  \\
+        block\_0 & $8$ & $(3, 3)$ & $(1, 1)$ & ReLu6 & \checkmark & \checkmark & $(55, 100, 8)$ & Conv1 \\
+        block\_1 & $16$ & $(3, 3)$ & $(2, 2)$ & ReLu6 & \checkmark &  & $(55, 100, 8)$ & block\_0 \\
+        block\_2 & $16$ & $(3, 3)$ & $(1, 1)$ & ReLu6 & \checkmark & \checkmark & $(28, 50, 16)$ & block\_1 \\
+        block\_3 & $16$ & $(3, 3)$ & $(1, 1)$ & ReLu6 & \checkmark & \checkmark & $(28, 50, 16)$ & block\_2 \\
+        block\_4 & $16$ & $(3, 3)$ & $(2, 2)$ & ReLu6 & \checkmark &  & $(28, 50, 16)$ & block\_3 \\
+        block\_5 & $16$ & $(3, 3)$ & $(1, 1)$ & ReLu6 & \checkmark & \checkmark & $(14, 25, 16)$ & block\_4 \\
+        block\_6 & $16$ & $(3, 3)$ & $(1, 1)$ & ReLu6 & \checkmark & \checkmark & $(14, 25, 16)$ & block\_5 \\
+        output\_1 & $2$ & $(3, 3)$ & $(1, 1)$ & Linear &  &  & $(28, 50, 16)$ & block\_3 \\
+        output\_2 & $2$ & $(3, 3)$ & $(1, 1)$ & Linear &  &  & $(28, 50, 16)$ & block\_3 \\
+        output\_3 & $2$ & $(3, 3)$ & $(1, 1)$ & Linear &  &  & $(14, 25, 16)$ & block\_6 \\
+        output\_4 & $2$ & $(3, 3)$ & $(1, 1)$ & Linear &  &  & $(14, 25, 16)$ & block\_6 \\
+        output\_5 & $2$ & $(3, 3)$ & $(1, 1)$ & Softmax &  &  & $(14, 25, 16)$ & block\_6 \\
+        \hline
+        \end{tabular}
+        \caption{Description of the neural network structure, block by block, giving the link between the blocks and some information such as the use Batch Normalization (BN) or residual connections (Res).}
+        \label{tab:nnstruct}
+    \end{table}{}
+\end{frame}{}
+
+\begin{frame}{Overfitting study}
+    % explain the idea
+    % show graphs
+    % show problems with the inverted bottleneck... + conv == res > res + not enough images
+    \begin{figure}
+  \begin{center}
+    \begin{subfigure}[t]{.49\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/all_epoch_loss_block_type.png}
+      \caption{Evolution of the training loss with epoch, for different block type}
+      \label{fig:overfitloss}
+    \end{subfigure}
+    \begin{subfigure}[t]{.49\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/all_epoch_val_loss_block_type.png}
+      \caption{Evolution of the validation loss with epoch, for different block type}
+      \label{fig:overfitvalloss}
+    \end{subfigure}
+    \caption{Evolution of the validation and training loss for different block type}
+  \end{center}
+\end{figure}
+\end{frame}{}
+
+\begin{frame}{Overfitting study}
+    % explain the idea
+    % show graphs
+    % show problems with the inverted bottleneck... + conv == res > res + not enough images
+    \begin{figure}
+  \begin{center}
+    \begin{subfigure}[t]{.49\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/all_epoch_loss_block_type_zoomed_0_5.png}
+      \caption{Evolution of the training loss with epoch, for different block type, zoomed on loss between 0 and 5}
+      \label{fig:overfitloss_zoom}
+    \end{subfigure}
+    \begin{subfigure}[t]{.49\linewidth}
+      \centering
+      \includegraphics[width=0.99\linewidth]{figures/all_epoch_val_loss_block_type_zoomed_0_5.png}
+      \caption{Evolution of the validation loss with epoch, for different block type, zoomed on loss between 0 and 5}
+      \label{fig:overfitvalloss_zoom}
+    \end{subfigure}
+    \caption{Evolution of the validation and training loss for different block type}
+  \end{center}
+\end{figure}
+\end{frame}{}
+
+
+
+\begin{frame}{Real data}
+    % 8000 images 4000 from smartphone, not much different weather, different luminosity
+    \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth]{figures/data_repartition.png}
+        \caption{Count of example for each classes in the dataset, cropped to 250 for readability.}
+        \label{fig:data_count}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{US Diamond Warning signs}
+    % example of cropped signs? (useful for next slide)
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.3\linewidth}
+          \centering
+          \includegraphics[height=0.8\linewidth]{figures/W1-1_R.jpg}
+          \caption{W1-1}
+        \end{subfigure}
+        \begin{subfigure}[t]{.3\linewidth}
+          \centering
+          \includegraphics[height=0.8\linewidth]{figures/W1-3_L.jpg}
+          \caption{W1-3}
+        \end{subfigure}
+        \begin{subfigure}[t]{.3\linewidth}
+          \centering
+          \includegraphics[height=0.8\linewidth]{figures/W1-4_L.jpg}
+          \caption{W1-4}
+        \end{subfigure}
+        \caption{Example of US diamond warning signs, with there MUTCD sign class.}
+        \label{signExample}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{Architecture search}
+    % what is architecture search how it works and why we didn't do that (in some sens our architecture search was doing it manually?...)
+    % tell we chose a grid search approach
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.45\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/darts_progress_recurrent-9.png}
+        \end{subfigure}
+        \begin{subfigure}[t]{.45\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/darts_progress_recurrent-19.png}
+        \end{subfigure}
+        \begin{subfigure}[t]{.45\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/darts_progress_recurrent-29.png}
+        \end{subfigure}
+        \begin{subfigure}[t]{.45\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/darts_progress_recurrent-39.png}
+        \end{subfigure}
+        \caption{Demo of the architecture search process as used in Darts \cite{liu2018darts}}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{Testing}
+    % disclaimer about validation
+    % what model are we going to test
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\linewidth]{figures/my_arch.pdf}
+        \caption{Architecture used for testing}
+    \end{figure}{}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|}
+            \hline
+            Filters & Latency (s) & FPS & mAP@25 & mAP@50 \\ \hline
+            $(8,16)$ & 0.011 & 88.7 & $0.68$ & $0.55$ \\ \hline
+        \end{tabular}
+    \end{table}{}
+\end{frame}{}
+
+\begin{frame}{State Road 2}
+    % describe sr2 what is interesting or not
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/map_sr2.png}
+        \caption{Map representing the test section we used on State Road 2}
+        \label{fig:map_sr2}
+    \end{figure}{}
+\end{frame}{}
+
+\begin{frame}{SR2 False Positive cases}
+    % list some meaning full examples
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FP/FP_13.png}
+          \caption{Chevron Sign}
+          \label{fig:chevronFP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FP/FP_09.png}
+          \caption{Guard rail signalization}
+          \label{fig:guardRailFP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FP/FP_07.png}
+          \caption{Work zone diamond sign}
+          \label{fig:workzoneFP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FP/FP_17.png}
+          \caption{Advertisement sign}
+          \label{fig:advertisementFP}
+        \end{subfigure}
+        % \caption{Example of False Positive case collected on State Road 2.}
+        \label{fig:FPcases}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{SR2 False Negative cases}
+    % list some meaning full examples, 9 cases in total
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FN/FN_03.png}
+          \caption{Light, faded sign}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FN/FN_09.png}
+          \caption{Sign on the other side of the road}
+          \label{fig:othersideFN}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FN/FN_07.png}
+          \caption{Light, faded sign}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/FN/FN_08.png}
+          \caption{Light, faded sign}
+        \end{subfigure}
+        % \caption{Example of False Negative cases collected on State Road 2.}
+        \label{fig:FNcases}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+\begin{frame}{SR2 True Positive example}
+    % interesting examples
+    \begin{figure}
+      \begin{center}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/TP/TP_01.png}
+          \caption{Temporary sign}
+          \label{fig:temporaryTP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/TP/TP_09.png}
+          \caption{Small sign}
+          \label{fig:farobstTP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/TP/TP_05.png}
+          \caption{Multiple signs}
+          \label{fig:multipleTP}
+        \end{subfigure}
+        \begin{subfigure}[t]{.49\linewidth}
+          \centering
+          \includegraphics[width=0.99\linewidth]{figures/examples/sr2/TP/TP_02.png}
+          \caption{Temporary sign}
+          \label{fig:bigtempTP}
+        \end{subfigure}
+        % \caption{Example of True positive cases collected on State Road 2.}
+        \label{fig:TPcases}
+      \end{center}
+    \end{figure}
+\end{frame}{}
+
+
+\backupend
+
+\end{document}
+

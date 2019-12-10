@@ -5,7 +5,7 @@ from detection_processing import DetectionProcessor
 from compute_map import eval_map
 
 
-class MAP_eval(tf.keras.callbacks.Callback):
+class MAPEval(tf.keras.callbacks.Callback):
     def __init__(self, validation_data: tf.keras.utils.Sequence, sizes, shapes, image_size, frequency: int = 1,
                  detection_threshold: float = 0.5, mns_threshold: float = 0.5, iou_thresholds=(0.5,),
                  epoch_start: int = 0):

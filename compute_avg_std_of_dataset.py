@@ -63,7 +63,8 @@ def merge_avg_var(avg: np.ndarray, var: np.ndarray):
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Compute Average and standard deviation of the pixel values of a "
+                                                 "given dataset.")
     parser.add_argument('data_path',
                         type=str,
                         help='Path to the input data')

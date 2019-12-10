@@ -6,6 +6,10 @@ from tensorflow.python.keras import backend as K
 from functools import lru_cache
 
 
+"""
+Code to generate hand crafted weights, unused in the final resutls, only for experimentations
+"""
+
 def create_edge_kernel(left_color, right_color, angle, kernel_size=7, dmz_size=0.0) -> np.ndarray:
     angle = angle % (2 * math.pi)
     if math.pi / 2 < angle <= (3 * math.pi) / 2:

@@ -1,0 +1,11 @@
+*
+
+!*/
+!*.tex
+!*.png
+!*.jpg
+!*.pdf
+!*.bib
+!.gitignore
+
+thesis-blx.bib

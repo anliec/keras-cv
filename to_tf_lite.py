@@ -52,7 +52,9 @@ def keras_to_tf_lite(keras_model_path: str, out_path: str, data_path: str, data_
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Convert the given Keras model into a TensorFlow lite model."
+                                                 "If quantification data are provided, full quantification will be "
+                                                 "run.")
     parser.add_argument('-i', '--input-keras-model',
                         required=True,
                         type=str,
