@@ -10,7 +10,8 @@
 !*.so
 !*.ipynb
 !*.md
-
+!graphs/
+!models/
 
 .ipynb_checkpoints/
 
